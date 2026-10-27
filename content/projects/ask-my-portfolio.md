@@ -1,7 +1,7 @@
 ---
 title: Ask my portfolio
 summary: A retrieval-augmented chat assistant on this site that answers from the site's own content and cites its sources.
-period: TODO
+period: 2026
 featured: false
 order: 1
 ---
@@ -38,7 +38,15 @@ citation accuracy and refusal rate for baseline vs retrieval, p50/p95 latency an
 cost per 1,000 questions.
 -->
 
-TODO: Eval results (baseline vs retrieval), latency, cost per 1,000 questions.
+Measured with a 40-question evaluation (30 answerable questions and 10 that should be
+declined), run 3 times per question and graded fact by fact:
+
+- With retrieval, 99.2% of answers pass; with all content in the prompt, 98.3%. Every
+  question that should be declined was declined.
+- Retrieval accuracy rose from 95.0% to 99.2% through three evaluation-driven changes:
+  adding context headers to chunks, rewording content that matched every question, and
+  limiting keyword search to names and technical terms.
+- Typical response time is about 1.5 seconds, and 1,000 questions cost about $0.17.
 
 ## Links
 
