@@ -6,6 +6,9 @@ script (`scripts/ingest.ts`, Phase 3) chunks and embeds them for retrieval.
 
 This README is not ingested. Only `facts.md`, `cv.md` and `projects/*.md` are.
 
+To add a project, [new-project-prompt.md](new-project-prompt.md) has a prompt that drafts
+the page from the old project's repository or notes.
+
 ## Rules
 
 1. **Each fact lives in exactly one file.**
