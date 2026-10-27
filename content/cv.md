@@ -62,44 +62,65 @@ GPA 8.08. Selected courses (grade):
 ## Skills
 
 <!--
-Give the context for every skill: production / personal project / coursework, ideally
-with duration and a link. The assistant won't infer anything, so a bare skill name
-can't answer "has he used X in production?".
+One line per skill, with every place it was used: production / personal project /
+master's thesis / coursework, linking to the project. The assistant won't infer
+anything, so a bare skill name can't answer "has he used X in production?".
 -->
 
-### Software engineering
+### Languages
 
-- Python: production, Novonesis internship ([Data Fetching Pipeline](/projects/data-fetching-pipeline)).
-- C# / .NET (ASP.NET Core Minimal APIs, Entity Framework Core): personal project,
-  [RepTracker](/projects/rep-tracker), deployed and in use.
-- TypeScript, React, Vite: personal project, [RepTracker](/projects/rep-tracker)
-  frontend, deployed and in use.
+- Python: production, Novonesis internship ([Data Fetching Pipeline](/projects/data-fetching-pipeline));
+  master's thesis ([Deepfake Audio Classification using Vision Transformers](/projects/audio-deepfake-detection)).
+- C#: personal projects, [RepTracker](/projects/rep-tracker) and [CV Builder](/projects/cv-builder).
+- TypeScript: personal projects, [RepTracker](/projects/rep-tracker), [CV Builder](/projects/cv-builder)
+  and [Manhwa Shelf](/projects/manhwa-shelf).
+- PowerShell: personal project, [Manhwa Shelf](/projects/manhwa-shelf) (a script that adds, commits and publishes entries).
 - Java, SQL. TODO: context for each (coursework, thesis or personal project).
+
+### Web development
+
+- React and Vite: personal projects, [RepTracker](/projects/rep-tracker), [CV Builder](/projects/cv-builder)
+  and [Manhwa Shelf](/projects/manhwa-shelf).
+- ASP.NET Core minimal APIs: personal projects, [RepTracker](/projects/rep-tracker) and
+  [CV Builder](/projects/cv-builder).
+- Entity Framework Core: personal project, [RepTracker](/projects/rep-tracker).
+- PDF generation with QuestPDF: personal project, [CV Builder](/projects/cv-builder).
 - APIs and integration: production, Novonesis internship (ingesting data from public APIs).
-- Relational databases: coursework, Database Systems (12).
-- Algorithms and data structures: coursework, Algorithm Design (10).
-- Concurrent programming: coursework, Practical Concurrent and Parallel Programming (12).
 
 ### AI and machine learning
 
-- Transformers, including Vision Transformers: master's thesis on deepfake audio
-  classification (12).
-- PyTorch, LLMs / GPT-based models, GenAI, NLP, computer vision. TODO: context for
-  each (thesis, coursework or personal project).
+- Transformers: master's thesis, fine-tuning the Audio Spectrogram Transformer (Hugging Face
+  Transformers) and a Vision Transformer (timm) for deepfake audio classification (12),
+  [Deepfake Audio Classification using Vision Transformers](/projects/audio-deepfake-detection).
+- PyTorch, scikit-learn, audio processing with librosa, experiment tracking with Weights & Biases,
+  and training on a GPU cluster with Slurm: master's thesis,
+  [Deepfake Audio Classification using Vision Transformers](/projects/audio-deepfake-detection).
+- LLM API integration (DeepSeek): personal project, [CV Builder](/projects/cv-builder).
+- GenAI, NLP, computer vision. TODO: context for each (thesis, coursework or personal project).
 
-### Data and platforms
+### Data and databases
 
-- Databricks, Unity Catalog, PySpark, data pipelines, automated scheduling:
-  production, Novonesis internship ([Data Fetching Pipeline](/projects/data-fetching-pipeline)).
+- Databricks, Unity Catalog, PySpark, data pipelines, automated scheduling: production,
+  Novonesis internship ([Data Fetching Pipeline](/projects/data-fetching-pipeline)).
 - PostgreSQL: personal project, [RepTracker](/projects/rep-tracker).
+- Relational databases: coursework, Database Systems (12).
+
+### Computer science foundations
+
+- Algorithms and data structures: coursework, Algorithm Design (10).
+- Concurrent programming: coursework, Practical Concurrent and Parallel Programming (12).
 
 ### Delivery and lifecycle
 
 - CI/CD with GitHub Actions, automated testing, logging and monitoring, alerting,
   documentation: production, Novonesis internship
   ([Data Fetching Pipeline](/projects/data-fetching-pipeline)).
-- Docker (multi-stage builds) and Docker Compose: personal project,
-  [RepTracker](/projects/rep-tracker).
+- Unit testing with Vitest: personal project, [Manhwa Shelf](/projects/manhwa-shelf).
+- Docker: personal projects, [RepTracker](/projects/rep-tracker) (multi-stage build) and
+  [CV Builder](/projects/cv-builder).
+- Hosting and deployment: Render ([RepTracker](/projects/rep-tracker)), Azure Container Apps
+  ([CV Builder](/projects/cv-builder)) and Cloudflare Workers ([CV Builder](/projects/cv-builder),
+  [Manhwa Shelf](/projects/manhwa-shelf)).
 - Git. TODO: context.
 
 ## Spoken languages

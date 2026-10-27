@@ -2,7 +2,7 @@
 title: Deepfake Audio Classification using Vision Transformers
 summary: Master's thesis project at the IT University of Copenhagen that fine-tunes the Audio Spectrogram Transformer (AST) and a Vision Transformer (ViT) to detect deepfake speech, then tests how well they generalise to unseen datasets.
 period: 2025
-featured: true
+featured: false
 order: 4
 ---
 
@@ -23,14 +23,12 @@ Generative models can now produce speech that most people cannot tell apart from
 
 ## My role
 
-Two-person master's thesis, written with Villum Sonne. The work was split evenly and mostly done through pair programming, so neither person owned separate parts of the code. Together the two built the full pipeline:
+Two-person master's thesis for Computer Science. 
 - spectrogram preprocessing and dataset loaders for three datasets
 - fine-tuning both models: the AST had its first 10 layers frozen and its position embeddings interpolated for longer inputs, and the ViT had only its last blocks and classifier head trained
 - cross-dataset benchmarking with EER
 - attention maps and t-SNE plots of the learned embeddings
 - inference on single audio clips
-
-TODO: Which degree programme was the thesis for?
 
 ## Results
 
@@ -45,4 +43,3 @@ TODO: Which degree programme was the thesis for?
 ## Links
 
 - GitHub repository: https://github.com/carcasonne/Kandidat
-- TODO: Is the thesis PDF published anywhere, for example in ITU's library?
