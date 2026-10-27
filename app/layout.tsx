@@ -76,8 +76,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
 }
 
 function Footer({ contact }: { contact: Contact }) {
-  const { email } = contact;
   const links = [
+    contact.email && { href: `mailto:${contact.email}`, label: contact.email },
     contact.linkedin && { href: contact.linkedin, label: "linkedin" },
     contact.github && { href: contact.github, label: "github" },
     contact.leaguepedia && { href: contact.leaguepedia, label: "leaguepedia" },
@@ -85,21 +85,11 @@ function Footer({ contact }: { contact: Contact }) {
 
   return (
     <footer className="border-t border-line">
-      <div className="mx-auto w-full max-w-6xl px-5 pt-20 pb-28 sm:px-8">
-        <p className="font-mono text-[13px] text-ash">
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-baseline gap-x-8 gap-y-3 px-5 pt-10 pb-24 font-mono text-[13px] text-ash sm:px-8">
+        <h2>
           <span aria-hidden="true">{"// "}</span>contact
-        </p>
-        {email && (
-          <a
-            href={`mailto:${email}`}
-            className="group mt-6 inline-block text-[clamp(1.75rem,6vw,4.75rem)] leading-none font-medium tracking-display"
-          >
-            <span className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_2px] bg-left-bottom bg-no-repeat pb-1 transition-[background-size] duration-500 ease-out-expo group-hover:bg-[length:100%_2px]">
-              {email}
-            </span>
-          </a>
-        )}
-        <ul className="mt-10 flex gap-6 font-mono text-[13px] text-ash">
+        </h2>
+        <ul className="flex flex-wrap gap-x-6 gap-y-2">
           {links.map((link) => (
             <li key={link.href}>
               <a href={link.href} className="transition-colors hover:text-bone">
