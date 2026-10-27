@@ -1,17 +1,25 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { FinishReason, UIMessage, UIMessageStreamWriter } from "ai";
-import { EFFORT, MAX_OUTPUT_TOKENS, MODEL } from "./config";
+import { EFFORT, MAX_OUTPUT_TOKENS, MODEL, type RetrievalMode } from "./config";
 import type { Section } from "./content";
+import { extractCitations } from "./citations";
 import { costUsd } from "./cost";
-import { extractCitations, sourceTitle } from "./prompt";
+import { sourceTitle } from "./prompt";
+
+/** "retrieval-fallback": retrieval failed, so all content was used instead. */
+export type AnswerMode = RetrievalMode | "retrieval-fallback";
 
 /** Sent with the final stream chunk; the evals read it for latency and cost. */
 export interface ChatMetadata {
-  mode: "baseline";
+  mode: AnswerMode;
   model: string;
   stopReason: string | null;
+  /** Server-side, from request start to the last token, retrieval included. */
   latencyMs: number;
   timeToFirstTokenMs: number | null;
+  retrievalMs: number | null;
+  /** Chunk ids given to the model, in source-number order (retrieval mode only). */
+  retrievedIds?: string[];
   inputTokens: number;
   outputTokens: number;
   cacheReadTokens: number;
@@ -39,14 +47,20 @@ export async function streamAnswer({
   system,
   messages,
   sources,
+  mode,
+  startedAt,
+  retrievalMs,
   writer,
 }: {
   system: string;
   messages: Anthropic.MessageParam[];
   sources: Section[];
+  mode: AnswerMode;
+  /** `performance.now()` when the request arrived. */
+  startedAt: number;
+  retrievalMs: number | null;
   writer: UIMessageStreamWriter<ChatUIMessage>;
 }): Promise<void> {
-  const startedAt = performance.now();
   let firstTokenAt: number | null = null;
   let answer = "";
 
@@ -54,9 +68,16 @@ export async function streamAnswer({
     model: MODEL,
     max_tokens: MAX_OUTPUT_TOKENS,
     output_config: { effort: EFFORT },
-    // The system prompt is identical for every question in baseline mode,
-    // so after the first request it is read from cache at a tenth of the price.
-    system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+    system: [
+      {
+        type: "text",
+        text: system,
+        // With all content in the prompt, the system prompt is identical for every
+        // question, so later requests read it from cache at a tenth of the price.
+        // Retrieval prompts differ per question; a cache write would only add cost.
+        ...(mode !== "retrieval" && { cache_control: { type: "ephemeral" as const } }),
+      },
+    ],
     messages,
   });
 
@@ -90,11 +111,13 @@ export async function streamAnswer({
     type: "finish",
     finishReason: toFinishReason(message.stop_reason),
     messageMetadata: {
-      mode: "baseline",
+      mode,
       model: message.model,
       stopReason: message.stop_reason,
       latencyMs: Math.round(performance.now() - startedAt),
       timeToFirstTokenMs: firstTokenAt === null ? null : Math.round(firstTokenAt - startedAt),
+      retrievalMs,
+      ...(mode === "retrieval" && { retrievedIds: sources.map((s) => s.id) }),
       inputTokens: message.usage.input_tokens,
       outputTokens: message.usage.output_tokens,
       cacheReadTokens: message.usage.cache_read_input_tokens ?? 0,

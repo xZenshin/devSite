@@ -5,17 +5,14 @@
  *   npm run dev                      (in another terminal)
  *   npm run ask -- "Is Alexander open to relocation?"
  */
-import type { UIMessageChunk } from "ai";
 import type { ChatMetadata } from "../lib/answer";
+import { readUIMessageChunks } from "../lib/ui-stream";
 
 const API_URL = process.env.CHAT_API_URL ?? "http://localhost:3000/api/chat";
 
 async function main(): Promise<void> {
   const question = process.argv.slice(2).join(" ").trim();
-  if (!question) {
-    console.error('Usage: npm run ask -- "your question"');
-    process.exit(1);
-  }
+  if (!question) throw new Error('Usage: npm run ask -- "your question"');
 
   const response = await fetch(API_URL, {
     method: "POST",
@@ -25,14 +22,13 @@ async function main(): Promise<void> {
     }),
   });
   if (!response.ok || !response.body) {
-    console.error(`HTTP ${response.status}: ${await response.text()}`);
-    process.exit(1);
+    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
   }
 
   const sources: string[] = [];
   let metadata: ChatMetadata | undefined;
 
-  for await (const chunk of readChunks(response.body)) {
+  for await (const chunk of readUIMessageChunks(response.body)) {
     switch (chunk.type) {
       case "text-delta":
         process.stdout.write(chunk.delta);
@@ -53,25 +49,9 @@ async function main(): Promise<void> {
   if (metadata) console.log("\nMetadata:", metadata);
 }
 
-/** Parses the server-sent events of a UI message stream into chunks. */
-async function* readChunks(body: ReadableStream<Uint8Array>): AsyncGenerator<UIMessageChunk> {
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) return;
-    buffer += decoder.decode(value, { stream: true });
-    const events = buffer.split("\n\n");
-    buffer = events.pop() ?? "";
-    for (const event of events) {
-      const data = event.replace(/^data: /, "").trim();
-      if (data && data !== "[DONE]") yield JSON.parse(data) as UIMessageChunk;
-    }
-  }
-}
-
+// exitCode rather than process.exit(): exiting while network handles are still
+// closing crashes Node on Windows (libuv assertion in async.c).
 main().catch((error: unknown) => {
-  console.error(error);
-  process.exit(1);
+  console.error(error instanceof Error ? error.message : error);
+  process.exitCode = 1;
 });

@@ -2,7 +2,7 @@
 title: RepTracker
 summary: Built a web-based workout tracker for logging sets, exercises and reps combined with statistics.
 period: TODO
-featured: true
+featured: false
 order: 3
 ---
 

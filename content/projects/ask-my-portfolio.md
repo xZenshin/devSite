@@ -1,28 +1,27 @@
 ---
 title: Ask my portfolio
-summary: A retrieval-augmented chat assistant that answers recruiters' questions about Alexander with cited sources.
+summary: A retrieval-augmented chat assistant on this site that answers from the site's own content and cites its sources.
 period: TODO
-featured: true
+featured: false
 order: 1
 ---
 
 ## Problem
 
-Recruiters and hiring managers skim portfolios quickly and often have specific
-questions: "has he used TypeScript in production?", "is he open to relocation?". The
-answer is usually on the site somewhere, but finding it takes more time than they'll
-spend. This assistant answers those questions directly, using only Alexander's own
-content. It cites the section each claim comes from and says so when it doesn't know,
-instead of guessing.
+Recruiters and hiring managers spend little time on each portfolio, and the detail they
+need is often spread across several pages. This project adds an assistant to the site
+that replies in a few sentences, using only the site's own content. Every claim links to
+the section it comes from, and when the site doesn't cover something, the assistant says
+so instead of guessing.
 
 ## Stack
 
 - Next.js (App Router) and TypeScript, deployed on Vercel
 - Vercel AI SDK for token-by-token streaming
 - Anthropic Claude Haiku for answer generation
-- TODO: Embedding model (decided in the ingest phase)
+- Voyage AI voyage-4-lite embeddings
 - Supabase Postgres with pgvector, plus Postgres full-text search for hybrid retrieval
-- Upstash Redis for per-IP rate limiting
+- Vercel Firewall for per-IP rate limiting
 - GitHub Actions for re-ingesting content and running evals on pull requests
 
 ## My role

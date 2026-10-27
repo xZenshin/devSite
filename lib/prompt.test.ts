@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Section } from "./content";
-import { buildSystemPrompt, extractCitations } from "./prompt";
+import { buildSystemPrompt } from "./prompt";
 
 const sections: Section[] = [
   {
@@ -47,19 +47,5 @@ describe("buildSystemPrompt", () => {
 
   it("is deterministic, so the prompt cache can hit", () => {
     expect(buildSystemPrompt(sections, {})).toBe(buildSystemPrompt([...sections], {}));
-  });
-});
-
-describe("extractCitations", () => {
-  it("returns cited numbers in order of first appearance", () => {
-    expect(extractCitations("Yes [2]. Also [1][2] and [3, 1].", 3)).toEqual([2, 1, 3]);
-  });
-
-  it("ignores numbers that are not valid source ids", () => {
-    expect(extractCitations("See [0], [4] and [2].", 3)).toEqual([2]);
-  });
-
-  it("returns nothing when the answer cites no sources", () => {
-    expect(extractCitations("I don't have that information.", 3)).toEqual([]);
   });
 });

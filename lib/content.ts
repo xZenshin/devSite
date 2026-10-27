@@ -11,6 +11,8 @@ export interface Section {
   file: string;
   /** Page title from frontmatter, e.g. "RepTracker". */
   pageTitle: string;
+  /** One-line project summary from frontmatter; gives short chunks context. */
+  pageSummary?: string;
   heading: string;
   /** Site URL with the heading anchor, e.g. "/projects/rep-tracker#stack". */
   url: string;
@@ -24,7 +26,19 @@ export interface Contact {
   github?: string;
 }
 
+/** Frontmatter of one content file, for rendering its page. */
+export interface PageMeta {
+  file: string;
+  /** Page path without anchor, e.g. "/cv" or "/projects/rep-tracker". */
+  url: string;
+  title: string;
+  summary?: string;
+  period?: string;
+  featured: boolean;
+}
+
 export interface Content {
+  pages: PageMeta[];
   sections: Section[];
   contact: Contact;
   /** Unfinished content that was left out, for logging. */
@@ -34,6 +48,7 @@ export interface Content {
 interface ParsedFile {
   file: string;
   order: number;
+  page: PageMeta;
   sections: Section[];
   contact?: Contact;
   warnings: string[];
@@ -78,6 +93,7 @@ export async function loadContent(): Promise<Content> {
   ];
 
   return {
+    pages: ordered.map((p) => p.page),
     sections: ordered.flatMap((p) => p.sections),
     contact: ordered.find((p) => p.contact)?.contact ?? {},
     warnings: ordered.flatMap((p) => p.warnings),
@@ -92,6 +108,7 @@ export function parseContentFile(file: string, raw: string): ParsedFile {
   const { data, content } = matter(raw);
   const pageTitle = cleanValue(data.title) ?? file;
   const pageUrl = pageUrlFor(file, data.url);
+  const pageSummary = isProject(file) ? cleanValue(data.summary) : undefined;
   const slugger = new GithubSlugger();
   const warnings: string[] = [];
   const sections: Section[] = [];
@@ -118,6 +135,7 @@ export function parseContentFile(file: string, raw: string): ParsedFile {
       id: `${stripExtension(file)}#${anchor}`,
       file,
       pageTitle,
+      ...(pageSummary && { pageSummary }),
       heading,
       url: `${pageUrl}#${anchor}`,
       text,
@@ -133,6 +151,14 @@ export function parseContentFile(file: string, raw: string): ParsedFile {
   return {
     file,
     order: typeof data.order === "number" ? data.order : Number.MAX_SAFE_INTEGER,
+    page: {
+      file,
+      url: pageUrl,
+      title: pageTitle,
+      ...(pageSummary && { summary: pageSummary }),
+      ...(cleanValue(data.period) && { period: cleanValue(data.period) }),
+      featured: data.featured === true,
+    },
     sections,
     contact,
     warnings,
@@ -217,7 +243,8 @@ function projectOverview(
   const lines = [
     summary,
     period && `- Period: ${period}`,
-    data.featured === true && "- Featured project",
+    // Spelled out, because the model never sees the frontmatter flag itself.
+    data.featured === true && "- Featured project: Alexander considers this his strongest project.",
   ].filter((line): line is string => Boolean(line));
   if (lines.length === 0) return null;
 

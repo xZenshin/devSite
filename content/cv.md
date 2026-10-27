@@ -13,9 +13,7 @@ repeating them here.
 
 Recent MSc graduate in Computer Science from the IT University of Copenhagen (GPA
 9.38), with a background in both software development and AI/ML. During an
-internship at Novonesis, built an automated data pipeline framework on Databricks end to end,
-from API integration to testing, monitoring and CI/CD. In AI, has worked with deep
-learning and Transformer models, including a master's thesis on deepfake detection
+internship at Novonesis, built an automated data pipeline framework on Databricks end to end, from API integration to testing, monitoring and CI/CD. In AI, has worked with deep learning and Transformer models, including a master's thesis on deepfake detection
 with Vision Transformers (grade 12). Programming is also a hobby: builds small
 projects in spare time for the fun of learning something new and seeing an idea
 turn into something that works. Uses AI tools such as Claude Code to work faster

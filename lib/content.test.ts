@@ -87,7 +87,9 @@ order: 3
       ["projects/rep-tracker#overview", "/projects/rep-tracker"],
       ["projects/rep-tracker#stack", "/projects/rep-tracker#stack"],
     ]);
-    expect(parsed.sections[0].text).toBe("A workout tracker.\n- Featured project");
+    expect(parsed.sections[0].text).toBe(
+      "A workout tracker.\n- Featured project: Alexander considers this his strongest project.",
+    );
   });
 
   it("builds the contact section and contact details from frontmatter, skipping TODOs", () => {

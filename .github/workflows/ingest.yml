@@ -1,0 +1,38 @@
+name: Ingest content
+
+# Re-embeds content whenever it, or the code that chunks and embeds it, changes on main.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "content/**"
+      - "lib/content.ts"
+      - "lib/chunking.ts"
+      - "lib/embeddings.ts"
+      - "lib/config.ts"
+      - "scripts/ingest.ts"
+  workflow_dispatch:
+
+# Never run two ingests against the database at once.
+concurrency:
+  group: ingest
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run ingest
+        env:
+          VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
