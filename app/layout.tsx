@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChatProvider } from "@/components/chat/chat-provider";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { Cursor } from "@/components/cursor";
+import { SectionLink } from "@/components/section-link";
 import type { Contact } from "@/lib/content";
 import { getSite } from "@/lib/site";
 import "./globals.css";
@@ -46,14 +47,14 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <ul className="flex gap-4 sm:gap-7">
                   {NAV.map((item) => (
                     <li key={item.href}>
-                      <Link href={item.href} className="group">
+                      <SectionLink href={item.href} className="group">
                         <span aria-hidden="true" className="text-ash">
                           ~/
                         </span>
                         <span className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat pb-0.5 transition-[background-size] duration-300 ease-out-expo group-hover:bg-[length:100%_1px]">
                           {item.label}
                         </span>
-                      </Link>
+                      </SectionLink>
                     </li>
                   ))}
                 </ul>
