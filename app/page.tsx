@@ -14,14 +14,14 @@ export default async function Home() {
         </p>
         <RevealLines
           lines={["Alexander", "Skou-Larsen"]}
-          className="mt-6 text-[clamp(3.2rem,12vw,10.5rem)] leading-[0.88] font-medium tracking-display"
+          className="mt-6 text-[clamp(2.75rem,10vw,9rem)] leading-[0.88] font-medium tracking-display"
         />
         <p
           className="fade-in mt-8 max-w-[46ch] text-lg leading-relaxed text-ash sm:text-xl"
           style={{ "--delay": "450ms" } as React.CSSProperties}
         >
           MSc in Computer Science, building across software engineering, data and AI. Ask the assistant anything
-          about my work; every answer links to its source.
+          about my work.
         </p>
         <div className="fade-in mt-12" style={{ "--delay": "650ms" } as React.CSSProperties}>
           <AskHero />
