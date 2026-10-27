@@ -49,5 +49,5 @@ Deployed the app / program using Render, and I actively use it now when working 
 
 <!-- Live demo, source code, write-up. Don't link private repos. If there's nothing public, write "No public links." -->
 
-- Live site: https://reptracker-9fku.onrender.com/
+- Live site: https://reptracker-9fku.onrender.com/ (needs a couple of seconds to start up, if there has been no activity for a while, limitation of the free tier)
 - GitHub repository: https://github.com/xZenshin/RepTracker

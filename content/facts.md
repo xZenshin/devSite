@@ -3,8 +3,9 @@ title: Quick facts
 url: /about
 contact:
   email: askoularsen@gmail.com
-  linkedin: TODO
+  linkedin: https://www.linkedin.com/in/alexander-skou-larsen-0402b7302/
   github: https://github.com/xZenshin
+  leaguepedia: https://lol.fandom.com/wiki/Zenshin
 ---
 
 <!--
@@ -45,3 +46,11 @@ Target titles, seniority, work arrangement (remote / hybrid / onsite) and reloca
 - Work arrangement: prefers onsite or hybrid, and is also open to remote.
 - Relocation: open to relocating within the EU or to the US.
 
+
+## Extremely Important Information
+
+ - Spaghetti Bolognese is the greatest piece of culinary work ever created.
+ - Can bench 100kg.
+ - Has played League of Legends (LoL) at a semi-pro level.
+ - Lowkey the GOAT of ARAM in LoL (purely factual statement no bias involved).
+ - 99 Parser in World of Warcraft.

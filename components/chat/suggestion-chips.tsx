@@ -13,7 +13,7 @@ export function SuggestionChips({ label }: { label: string }) {
             type="button"
             onClick={() => ask(question)}
             disabled={isBusy}
-            className="min-h-11 rounded-full border border-mist bg-surface px-4 py-2 text-left text-sm text-ink transition-colors hover:border-spruce hover:text-spruce disabled:opacity-50"
+            className="min-h-11 border border-line px-3.5 py-2 text-left text-sm text-ash transition-colors duration-200 hover:border-bone hover:bg-bone hover:text-black disabled:opacity-40"
           >
             {question}
           </button>

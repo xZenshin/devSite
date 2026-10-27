@@ -24,6 +24,8 @@ export interface Contact {
   email?: string;
   linkedin?: string;
   github?: string;
+  /** Leaguepedia profile (League of Legends esports wiki). */
+  leaguepedia?: string;
 }
 
 /** Frontmatter of one content file, for rendering its page. */
@@ -60,6 +62,7 @@ const CONTACT_LABELS: Record<keyof Contact, string> = {
   email: "Email",
   linkedin: "LinkedIn",
   github: "GitHub",
+  leaguepedia: "Leaguepedia",
 };
 
 let cached: Promise<Content> | undefined;

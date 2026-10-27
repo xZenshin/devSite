@@ -22,7 +22,7 @@ export function ChatMessage({
   if (message.role === "user") {
     return (
       <li className="flex justify-end">
-        <p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-spruce px-4 py-2.5 text-paper">
+        <p className="max-w-[85%] whitespace-pre-wrap bg-bone px-4 py-2.5 text-black">
           <span className="sr-only">You: </span>
           {text}
         </p>
@@ -33,7 +33,7 @@ export function ChatMessage({
   const sources = messageSources(message);
   return (
     <li>
-      <p className="whitespace-pre-wrap leading-relaxed">
+      <p className="whitespace-pre-wrap leading-relaxed text-bone/90">
         <span className="sr-only">Assistant: </span>
         {splitCitations(text).map((segment, i) =>
           segment.type === "text" ? (
@@ -44,16 +44,16 @@ export function ChatMessage({
         )}
       </p>
       {sources.size > 0 && (
-        <div className="mt-3">
-          <h3 className="text-sm font-semibold text-ink-muted">Sources</h3>
-          <ol className="mt-1 space-y-1 text-sm">
+        <div className="mt-4 border-t border-line pt-3">
+          <h3 className="font-mono text-[12px] text-ash">sources</h3>
+          <ol className="mt-2 space-y-1.5 text-sm">
             {[...sources].map(([n, source]) => (
-              <li key={n} className="flex gap-2">
-                <span className="w-4 shrink-0 text-ink-muted">{n}</span>
+              <li key={n} className="flex gap-3">
+                <span className="w-4 shrink-0 font-mono text-[12px] text-ash">{n}</span>
                 <Link
                   href={source.url}
                   onClick={onNavigate}
-                  className="text-spruce underline underline-offset-2 hover:text-spruce-strong"
+                  className="text-bone underline decoration-dim underline-offset-4 transition-colors hover:decoration-bone"
                 >
                   {source.title}
                 </Link>
@@ -79,14 +79,14 @@ function Citation({
   return numbers.map((n) => {
     const source = sources.get(n);
     // Sources arrive after the text, so markers stay plain until then.
-    if (!source) return <span key={n} className="text-ink-muted">[{n}]</span>;
+    if (!source) return <span key={n} className="text-ash">[{n}]</span>;
     return (
       <Link
         key={n}
         href={source.url}
         onClick={onNavigate}
         aria-label={`Source ${n}: ${source.title}`}
-        className="mx-0.5 inline-block rounded bg-mustard/20 px-1.5 align-baseline text-[0.8em] font-semibold text-ink hover:bg-mustard/40"
+        className="mx-0.5 inline-block border border-bone/40 px-1 align-baseline font-mono text-[0.75em] leading-snug text-bone transition-colors hover:border-bone hover:bg-bone hover:text-black"
       >
         {n}
       </Link>

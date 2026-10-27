@@ -8,5 +8,5 @@ export const metadata: Metadata = { title: "Quick facts" };
 export default async function AboutPage() {
   const page = await getPage("/about");
   if (!page) notFound();
-  return <PageView page={page} />;
+  return <PageView page={page} label="about" />;
 }
