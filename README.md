@@ -255,7 +255,7 @@ cp .env.example .env.local     # fill in the four keys
 ## Project structure
 
 ```
-app/                 pages (home, /about, /cv, /projects/[slug]) and api/chat/route.ts
+app/                 pages (home, /about, /cv, /projects/[slug], /random) and api/chat/route.ts
 components/          chat widget, Markdown rendering, page layout
 content/             the site's content: the single source of truth
 lib/                 content parsing, chunking, retrieval, prompt, streaming answer

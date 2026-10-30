@@ -10,29 +10,7 @@ import { Markdown } from "./markdown";
 export function PageView({ page, label }: { page: SitePage; label: ReactNode }) {
   return (
     <article className="pt-32 sm:pt-40">
-      <header className="border-b border-line pb-12">
-        <p className="fade-in font-mono text-[13px] text-ash" style={{ "--delay": "50ms" } as React.CSSProperties}>
-          <span aria-hidden="true">{"// "}</span>
-          {label}
-        </p>
-        <RevealLines
-          lines={[page.title]}
-          className="mt-5 text-[clamp(2.75rem,9vw,7.5rem)] leading-[0.9] font-medium tracking-display"
-        />
-        {page.summary && (
-          <p
-            className="fade-in mt-8 max-w-[52ch] text-lg leading-relaxed text-ash sm:text-xl"
-            style={{ "--delay": "400ms" } as React.CSSProperties}
-          >
-            {page.summary}
-          </p>
-        )}
-        {page.period && (
-          <p className="fade-in mt-4 font-mono text-[13px] text-ash" style={{ "--delay": "500ms" } as React.CSSProperties}>
-            {page.period}
-          </p>
-        )}
-      </header>
+      <PageHeader label={label} title={page.title} summary={page.summary} period={page.period} />
 
       <div>
         {page.sections.map((section, i) => (
@@ -54,5 +32,44 @@ export function PageView({ page, label }: { page: SitePage; label: ReactNode }) 
         ))}
       </div>
     </article>
+  );
+}
+
+/** A page's label, large title and optional summary and period. */
+export function PageHeader({
+  label,
+  title,
+  summary,
+  period,
+}: {
+  label: ReactNode;
+  title: string;
+  summary?: string;
+  period?: string;
+}) {
+  return (
+    <header className="border-b border-line pb-12">
+      <p className="fade-in font-mono text-[13px] text-ash" style={{ "--delay": "50ms" } as React.CSSProperties}>
+        <span aria-hidden="true">{"// "}</span>
+        {label}
+      </p>
+      <RevealLines
+        lines={[title]}
+        className="mt-5 text-[clamp(2.75rem,9vw,7.5rem)] leading-[0.9] font-medium tracking-display"
+      />
+      {summary && (
+        <p
+          className="fade-in mt-8 max-w-[52ch] text-lg leading-relaxed text-ash sm:text-xl"
+          style={{ "--delay": "400ms" } as React.CSSProperties}
+        >
+          {summary}
+        </p>
+      )}
+      {period && (
+        <p className="fade-in mt-4 font-mono text-[13px] text-ash" style={{ "--delay": "500ms" } as React.CSSProperties}>
+          {period}
+        </p>
+      )}
+    </header>
   );
 }

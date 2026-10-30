@@ -21,6 +21,7 @@ const NAV = [
   { href: "/#projects", label: "projects" },
   { href: "/cv", label: "cv" },
   { href: "/about", label: "about" },
+  { href: "/random", label: "random" },
 ];
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -44,11 +45,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <span className="hidden sm:inline">alexander skou-larsen</span>
               </Link>
               <nav aria-label="Main">
-                <ul className="flex gap-4 sm:gap-7">
+                {/* Phones drop the ~/ prefixes so all four links fit beside the name at 375px. */}
+                <ul className="flex gap-3 sm:gap-7">
                   {NAV.map((item) => (
                     <li key={item.href}>
                       <SectionLink href={item.href} className="group">
-                        <span aria-hidden="true" className="text-ash">
+                        <span aria-hidden="true" className="hidden text-ash sm:inline">
                           ~/
                         </span>
                         <span className="bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat pb-0.5 transition-[background-size] duration-300 ease-out-expo group-hover:bg-[length:100%_1px]">
