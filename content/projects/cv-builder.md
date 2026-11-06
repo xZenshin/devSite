@@ -3,7 +3,7 @@ title: CV Builder
 summary: A web app for keeping one master CV and exporting PDF versions tailored to each job application, with AI suggestions from a pasted job listing.
 period: 2026
 featured: false
-order: 5
+order: 7
 ---
 
 ## Problem

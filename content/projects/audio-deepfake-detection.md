@@ -3,7 +3,7 @@ title: Deepfake Audio Classification using Vision Transformers
 summary: Master's thesis project at the IT University of Copenhagen that fine-tunes the Audio Spectrogram Transformer (AST) and a Vision Transformer (ViT) to detect deepfake speech, then tests how well they generalise to unseen datasets.
 period: 2025
 featured: false
-order: 4
+order: 2
 ---
 
 ## Problem

@@ -72,15 +72,19 @@ anything, so a bare skill name can't answer "has he used X in production?".
 - Python: production, Novonesis internship ([Data Fetching Pipeline](/projects/data-fetching-pipeline));
   master's thesis ([Deepfake Audio Classification using Vision Transformers](/projects/audio-deepfake-detection)).
 - C#: personal projects, [RepTracker](/projects/rep-tracker) and [CV Builder](/projects/cv-builder).
-- TypeScript: personal projects, [RepTracker](/projects/rep-tracker), [CV Builder](/projects/cv-builder)
-  and [Manhwa Shelf](/projects/manhwa-shelf).
+- TypeScript: personal projects, [RepTracker](/projects/rep-tracker), [Applicator](/projects/applicator) (built with Claude),
+  [CV Builder](/projects/cv-builder) and [Manhwa Shelf](/projects/manhwa-shelf).
 - PowerShell: personal project, [Manhwa Shelf](/projects/manhwa-shelf) (a script that adds, commits and publishes entries).
 - Java, SQL. TODO: context for each (coursework, thesis or personal project).
 
 ### Web development
 
-- React and Vite: personal projects, [RepTracker](/projects/rep-tracker), [CV Builder](/projects/cv-builder)
+- React: personal projects, [RepTracker](/projects/rep-tracker), [CV Builder](/projects/cv-builder),
+  [Manhwa Shelf](/projects/manhwa-shelf) and [Applicator](/projects/applicator) (built with Claude).
+- Vite: personal projects, [RepTracker](/projects/rep-tracker), [CV Builder](/projects/cv-builder)
   and [Manhwa Shelf](/projects/manhwa-shelf).
+- Electron: personal project, built with Claude, [Applicator](/projects/applicator).
+- Zod: personal project, built with Claude, [Applicator](/projects/applicator).
 - ASP.NET Core minimal APIs: personal projects, [RepTracker](/projects/rep-tracker) and
   [CV Builder](/projects/cv-builder).
 - Entity Framework Core: personal project, [RepTracker](/projects/rep-tracker).
@@ -96,6 +100,7 @@ anything, so a bare skill name can't answer "has he used X in production?".
   and training on a GPU cluster with Slurm: master's thesis,
   [Deepfake Audio Classification using Vision Transformers](/projects/audio-deepfake-detection).
 - LLM API integration (DeepSeek): personal project, [CV Builder](/projects/cv-builder).
+- LLM application development (Claude Code CLI, structured output): personal project, built with Claude, [Applicator](/projects/applicator).
 - GenAI, NLP, computer vision. TODO: context for each (thesis, coursework or personal project).
 
 ### Data and databases
@@ -115,7 +120,9 @@ anything, so a bare skill name can't answer "has he used X in production?".
 - CI/CD with GitHub Actions, automated testing, logging and monitoring, alerting,
   documentation: production, Novonesis internship
   ([Data Fetching Pipeline](/projects/data-fetching-pipeline)).
-- Unit testing with Vitest: personal project, [Manhwa Shelf](/projects/manhwa-shelf).
+- GitHub Actions: personal project, built with Claude, [Applicator](/projects/applicator).
+- Unit testing with Vitest: personal projects, [Manhwa Shelf](/projects/manhwa-shelf) and
+  [Applicator](/projects/applicator) (built with Claude).
 - Docker: personal projects, [RepTracker](/projects/rep-tracker) (multi-stage build) and
   [CV Builder](/projects/cv-builder).
 - Hosting and deployment: Render ([RepTracker](/projects/rep-tracker)), Azure Container Apps
