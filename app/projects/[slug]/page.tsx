@@ -35,7 +35,7 @@ async function Project({ params }: { params: Params }) {
 
   const label = (
     <>
-      <Link href="/#projects" className="text-bone underline decoration-dim underline-offset-4 hover:decoration-bone">
+      <Link href="/projects" className="text-bone underline decoration-dim underline-offset-4 hover:decoration-bone">
         projects
       </Link>
       /{slug}

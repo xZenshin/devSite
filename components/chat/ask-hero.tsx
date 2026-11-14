@@ -54,13 +54,13 @@ export function AskHero() {
               placeholder={focused ? TYPED_EXAMPLES[0] : ""}
               autoComplete="off"
               enterKeyHint="send"
-              className="min-h-16 w-full bg-transparent font-mono text-base placeholder:text-ash focus-visible:outline-none sm:text-lg"
+              className="min-h-16 w-full bg-transparent font-mono text-base placeholder:text-[13px] placeholder:text-ash focus-visible:outline-none sm:text-lg"
             />
             {/* The typing demo, drawn over the empty input with a block caret. */}
             {!question && !focused && (
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 flex items-center overflow-hidden font-mono text-base whitespace-nowrap text-ash sm:text-lg"
+                className="pointer-events-none absolute inset-0 flex items-center overflow-hidden font-mono text-[13px] whitespace-nowrap text-ash"
               >
                 {placeholder}
                 <span className="caret ml-0.5 shrink-0" />
@@ -76,7 +76,10 @@ export function AskHero() {
           </button>
         </div>
       </form>
-      <SuggestionChips label="Example questions" />
+      {/* Small and short screens keep the room for the lake; the same chips are in the chat panel. */}
+      <div className="hidden sm:[@media(min-height:800px)]:block">
+        <SuggestionChips label="Example questions" />
+      </div>
     </div>
   );
 }

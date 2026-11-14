@@ -18,10 +18,9 @@ export const metadata: Metadata = {
 };
 
 const NAV = [
-  { href: "/#projects", label: "projects" },
+  { href: "/projects", label: "projects" },
   { href: "/cv", label: "cv" },
   { href: "/about", label: "about" },
-  { href: "/random", label: "random" },
 ];
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -45,7 +44,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <span className="hidden sm:inline">alexander skou-larsen</span>
               </Link>
               <nav aria-label="Main">
-                {/* Phones drop the ~/ prefixes so all four links fit beside the name at 375px. */}
+                {/* Phones drop the ~/ prefixes so the links fit beside the name at 375px. */}
                 <ul className="flex gap-3 sm:gap-7">
                   {NAV.map((item) => (
                     <li key={item.href}>
@@ -86,7 +85,8 @@ function Footer({ contact }: { contact: Contact }) {
   ].filter((link): link is { href: string; label: string } => Boolean(link));
 
   return (
-    <footer className="border-t border-line">
+    // Opaque and above the home page's fixed lake canvas, which would otherwise show through.
+    <footer className="relative z-10 border-t border-line bg-black">
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-baseline gap-x-8 gap-y-3 px-5 pt-10 pb-24 font-mono text-[13px] text-ash sm:px-8">
         <h2>
           <span aria-hidden="true">{"// "}</span>contact

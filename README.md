@@ -31,6 +31,26 @@ when that changes.
 - **Keeps no record of visitors.** The app doesn't log questions, and rate limiting is done
   by Vercel's firewall rather than the app.
 
+## The home page is a lake
+
+The home page is a still lake seen from above, drawn in monospace characters on a canvas.
+Visitors fish the portfolio out of it:
+
+- **Right-click** the water and the boat sails there, trailing a wake that fades. **Q** casts the lure
+  at the pointer. On touch screens a move/cast switch decides what a tap does.
+- Small islands (palm, rocks, lighthouse) are scattered in new places on every visit. The boat
+  slides around them instead of sailing over them.
+- After a few seconds something bites: one of the projects, jobs or degrees, picked at random
+  from what hasn't been caught yet, or now and then an old boot. Catches go into a basket that
+  is kept in the browser's `localStorage`.
+- **Skip fishing** leads to [/projects](app/projects/page.tsx), the same things as a plain list.
+
+The catches are built from the same Markdown as the pages ([lib/catches.ts](lib/catches.ts)),
+so the lake can't offer anything the site doesn't have. The rules (sailing, casting, what
+bites, how a ripple is drawn as characters) are pure functions in [lib/lake/](lib/lake/) with
+unit tests; [the canvas component](components/lake/lake-canvas.tsx) only draws them, and only
+while something is moving. With reduced motion the game still works, without the animation.
+
 ## Architecture
 
 ```mermaid
@@ -235,7 +255,7 @@ cp .env.example .env.local     # fill in the four keys
 | Script | What it does |
 |---|---|
 | `npm run dev` / `build` | Next.js dev server / production build |
-| `npm test` | Unit tests (Vitest): content parsing, chunking, retrieval, scoring |
+| `npm test` | Unit tests (Vitest): content parsing, chunking, retrieval, scoring, the lake's rules |
 | `npm run typecheck`, `npm run lint` | TypeScript and ESLint |
 | `npm run ingest` | Chunk, embed and sync `/content` to Supabase |
 | `npm run ask -- "…"` | Ask the running server one question; prints sources, latency and cost |
@@ -255,12 +275,11 @@ cp .env.example .env.local     # fill in the four keys
 ## Project structure
 
 ```
-app/                 pages (home, /about, /cv, /projects/[slug], /random) and api/chat/route.ts
-components/          chat widget, Markdown rendering, page layout
+app/                 pages (home, /projects, /projects/[slug], /cv, /about) and api/chat/route.ts
+components/          the lake (canvas, basket, catch card), chat widget, Markdown rendering, page layout
 content/             the site's content: the single source of truth
-lib/                 content parsing, chunking, retrieval, prompt, streaming answer
+lib/                 content parsing, chunking, retrieval, prompt, streaming answer; lake/ holds the game rules
 scripts/             ingest.ts, ask.ts
 evals/               questions.json, run.ts, judge.ts, scoring, saved results
 supabase/migrations/ table, full-text index and search functions
 ```
-d
