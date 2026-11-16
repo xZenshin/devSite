@@ -169,6 +169,37 @@ export const BOAT_SPRITES: readonly (readonly (readonly string[])[])[] = standTo
   NORTH_WEST.map(mirror), // north-east
 ]);
 
+/**
+ * The lighthouse on the far shore, seen from the side like the kayak: a banded
+ * tower with the lamp near the top. Its foot is the middle of the bottom row.
+ *
+ * The tower is cropped from the lighthouse piece at https://ascii.rest/lighthouse/
+ * (https://github.com/bas3line/ascii, src/pieces/lighthouse.ts), without its sky,
+ * sea, rocks or beam.
+ */
+export const LIGHTHOUSE: readonly string[] = [
+  "      +      ",
+  "    ##*+-    ",
+  "   ###*+=-   ",
+  "   -:+*+:-   ",
+  "   -:*o*:-   ",
+  "   -:+*+:-   ",
+  " :#:*:+:+:=: ",
+  "--------::...",
+  "  #%%##*+-:  ",
+  "  #%%##*+-:  ",
+  "  #%%##*+=:  ",
+  "  ::::::...  ",
+  "  ::::.:...  ",
+  "  ::::::...  ",
+  " ##%###*+=-: ",
+  " #%%###*+=-: ",
+  " #%%###*+=-: ",
+  " :::::::.... ",
+];
+/** The lamp in the drawing of the lighthouse. */
+export const LAMP = "o";
+
 /** The lure in the air and on the water, and what the line pulls up. */
 export const LURE = "o";
 export const BOBBER_BITE = "O";

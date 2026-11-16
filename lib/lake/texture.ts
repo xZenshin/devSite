@@ -8,7 +8,7 @@ import {
   shoreDistance,
   type Lake,
 } from "./lake";
-import { WATER_DOT } from "./sprites";
+import { LAMP, LIGHTHOUSE, WATER_DOT } from "./sprites";
 import { cellCentre, hasDot, patchiness, project, scatter, type Vec } from "./world";
 
 /**
@@ -62,6 +62,26 @@ function buoyAt(lake: Lake, col: number, row: number, cellW: number, cellH: numb
 }
 
 /**
+ * The lighthouse's part of a cell, or null where the cell is clear of it. The
+ * tower stands up the screen from its foot, the middle of its bottom row. Each
+ * row is solid from one column before its first character to one after its
+ * last, so the woods behind don't run into the outline. The dark bands are
+ * dim, the light ones ash, and the lamp bright.
+ */
+function lighthouseAt(lake: Lake, col: number, row: number, cellW: number, cellH: number): Glyph | null {
+  const foot = project(lake.lighthouse);
+  const r = row - (Math.floor(foot.y / cellH) - (LIGHTHOUSE.length - 1));
+  if (r < 0 || r >= LIGHTHOUSE.length) return null;
+  const line = LIGHTHOUSE[r];
+  const c = col - Math.floor(foot.x / cellW) + Math.floor(line.length / 2);
+  const first = line.search(/\S/);
+  if (c < first - 1 || c > line.trimEnd().length) return null;
+  const char = line[c] ?? " ";
+  if (char === " ") return SAND;
+  return { char, tone: char === LAMP ? BONE : char === ":" || char === "." ? DIM : ASH, solid: true };
+}
+
+/**
  * The character in a cell of the picture, or null where the cell is empty
  * water. `col` and `row` count character cells of `cellW` by `cellH` pixels
  * from the lake's origin on the screen plane, so a cell always shows the same
@@ -82,6 +102,9 @@ export function glyphAt(lake: Lake | null, col: number, row: number, cellW: numb
     const rail = Math.abs(p.x - lake.jetty.shore.x) > JETTY_HALF_WIDTH - cellW;
     return { char: rail ? (row % 3 === 0 ? "o" : "|") : "=", tone: ASH, solid: true };
   }
+
+  const tower = lighthouseAt(lake, col, row, cellW, cellH);
+  if (tower) return tower;
 
   const buoy = buoyAt(lake, col, row, cellW, cellH);
   if (buoy) return { char: buoy, tone: buoy === "P" ? BONE : ASH, solid: true };

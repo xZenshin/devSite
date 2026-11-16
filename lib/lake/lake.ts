@@ -31,6 +31,16 @@ const JETTY_LENGTH = 360;
 const JETTY_ASHORE = 40;
 const NORTH = -Math.PI / 2;
 
+/**
+ * How far west of the jetty the lighthouse stands. With the boat at its usual
+ * place on a wide screen, that keeps it in sight as the visit starts.
+ */
+const LIGHTHOUSE_WEST = 640;
+/** Half the width of the lighthouse's foot, a little over half its drawing at the usual font size. */
+const LIGHTHOUSE_HALF_WIDTH = 60;
+/** How far up the beach the whole of its foot stands. */
+const LIGHTHOUSE_FOOTING = 16;
+
 /** How far from the shore the water reaches its full depth. */
 const DEEP_AT = 460;
 /** The size of the shallow banks out in the lake. */
@@ -59,6 +69,8 @@ export interface Lake {
   wobble: readonly { lobes: number; share: number; phase: number }[];
   /** The jetty's deck, from up on the beach to its end out in the water. */
   jetty: { shore: Vec; end: Vec };
+  /** The foot of the lighthouse, on the beach of the far shore, west of the jetty. The tower rises from it. */
+  lighthouse: Vec;
   /** Rocks standing out of the water. The boat goes round them. */
   rocks: readonly Disc[];
   /** Reed beds along the shore. The boat pushes through them, slowly. */
@@ -212,6 +224,7 @@ export function createLake(seed: number): Lake {
     centre,
     wobble,
     jetty: { shore: { x: 0, y: shoreY - JETTY_ASHORE }, end: { x: 0, y: JETTY_END_Y } },
+    lighthouse: { x: 0, y: 0 },
     rocks: [],
     reeds: [],
     lilies: [],
@@ -287,5 +300,24 @@ export function createLake(seed: number): Lake {
     lilies.push({ ...at, r: between(60, 110) });
   }
 
-  return { ...lake, grounds, rocks, reeds, lilies };
+  return { ...lake, lighthouse: placeLighthouse(lake), grounds, rocks, reeds, lilies };
+}
+
+/**
+ * Where the lighthouse stands: on the far shore, round from the jetty to the
+ * west until the shore is LIGHTHOUSE_WEST along, and far enough up the beach
+ * that both sides of its foot are on land, however the shore slopes there.
+ */
+function placeLighthouse(lake: Lake): Vec {
+  const along = (angle: number, out: number): Vec => ({
+    x: lake.centre.x + Math.cos(angle) * out,
+    y: lake.centre.y + Math.sin(angle) * out,
+  });
+  let angle = NORTH;
+  while (angle > NORTH - Math.PI / 2 && along(angle, shoreRadius(lake, angle)).x > -LIGHTHOUSE_WEST) angle -= 0.01;
+  for (let inset = LIGHTHOUSE_FOOTING; ; inset += 4) {
+    const foot = along(angle, shoreRadius(lake, angle) + inset);
+    const sides = [-LIGHTHOUSE_HALF_WIDTH, LIGHTHOUSE_HALF_WIDTH].map((dx) => ({ x: foot.x + dx, y: foot.y }));
+    if (inset > 300 || sides.every((side) => shoreDistance(lake, side) < -LIGHTHOUSE_FOOTING)) return foot;
+  }
 }
