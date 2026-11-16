@@ -17,7 +17,7 @@ const GUST_WIDTH = 230;
 const GUST_FROM = 0.7;
 const GUST_FULL = 0.85;
 /** The share of the water a gust at full strength ruffles. */
-const RUFFLE = 0.22;
+const RUFFLE = 0.16;
 
 /** How far from the shore the waves wash up at most, and how often they come in (radians per second). */
 export const WASH_REACH = 44;
@@ -26,7 +26,7 @@ const LAP_RATE = 1.3;
 const FOAM = 11;
 
 /** The share of water cells that ever glint, and the share of its time a glint lasts. */
-const GLINTERS = 0.05;
+const GLINTERS = 0.01;
 const GLINT = 0.025;
 
 const smoothstep = (from: number, to: number, x: number) => {
