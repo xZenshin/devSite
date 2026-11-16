@@ -44,7 +44,10 @@ Visitors fish the portfolio out of it:
   and lily pads float in the shallows. On the far shore a lighthouse stands west of the jetty,
   and a house east of it, with a paved path up from the jetty to its door and smoke rising from
   its chimney, leaning with the wind. Beyond the near shore there is a campsite ("Camping" by Joan
-  G. Stark, from [asciiart.eu](https://www.asciiart.eu/art/a93d8e13010704e4)).
+  G. Stark, from [asciiart.eu](https://www.asciiart.eu/art/a93d8e13010704e4)), and a moose
+  ([asciiart.eu](https://www.asciiart.eu/art/ebe843cdc14a402c), artist unknown) grazes by the
+  east shore. Sail close and it looks up, `[!]`, and runs off away from the lake; after a while
+  it walks back down to the water somewhere along the shore and grazes again.
 - The water is never quite still: gusts of wind ruffle the surface as they cross it and bend
   the reeds, waves lap at the shore, the light glints here and there, and the kayak bobs.
   Now and then a bird flies over, or two together, up or down the screen.
@@ -305,3 +308,11 @@ scripts/             ingest.ts, ask.ts
 evals/               questions.json, run.ts, judge.ts, scoring, saved results
 supabase/migrations/ table, full-text index and search functions
 ```
+
+
+
+TODO:
+Add animals that has idle animation and run away with a [!] when coming close
+Mby add a final building or something
+Go through the project and cv and about and clean up
+Update the readme to not be cancer

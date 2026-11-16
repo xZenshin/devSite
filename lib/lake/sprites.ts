@@ -41,7 +41,7 @@ function standTogether(sets: string[][][]): string[][][] {
   );
 }
 
-const MIRRORED: Record<string, string> = { "/": "\\", "\\": "/", "(": ")", ")": "(" };
+const MIRRORED: Record<string, string> = { "/": "\\", "\\": "/", "(": ")", ")": "(", "[": "]", "]": "[" };
 
 /** A drawing as seen in a mirror: what faced west faces east. */
 function mirror(rows: string[]): string[] {
@@ -282,6 +282,51 @@ const UPSIDE_DOWN: Record<string, string> = { "/": "\\", "\\": "/", v: "^", "^":
 export const BIRD_NORTH: readonly (readonly string[])[] = BIRD.map((drawing) =>
   [...drawing].reverse().map((row) => [...row].map((char) => UPSIDE_DOWN[char] ?? char).join("")),
 );
+
+/** How wide every drawing of the moose is, and the column its feet are in: the middle of its four legs. */
+const MOOSE_WIDTH = 11;
+export const MOOSE_FEET = 4;
+
+/**
+ * A drawing of the moose facing east, typed as it looks: a row of the `[!]` it
+ * shows when startled (blank here), then four rows of moose. Rows are filled
+ * out with spaces to its width, and blank rows at the top can be left out.
+ */
+function moose(...rows: string[]): readonly string[] {
+  const padded = rows.map((row) => row.padEnd(MOOSE_WIDTH));
+  while (padded.length < 5) padded.unshift(" ".repeat(MOOSE_WIDTH));
+  return padded;
+}
+
+/**
+ * The moose on the east shore, facing east, in each of its poses; see moose.ts.
+ * Its legs keep to the same columns in every pose, so it doesn't slide about as
+ * it twitches, grazes and runs. Facing west, it is drawn mirrored.
+ *
+ * The moose standing is from https://www.asciiart.eu/art/ebe843cdc14a402c (artist unknown).
+ */
+export const MOOSE = {
+  stand: moose("   \\\\_//", '   __/".', "  /__ |", "  || ||"),
+  /** One ear flicked back. */
+  ear: moose("   \\\\_//", "   __/'.", "  /__ |", "  || ||"),
+  /** A swish of the tail. */
+  tail: moose("   \\\\_//", "  '__/\".", "  /__ |", "  || ||"),
+  /** Bowing its head, on the way down to the grass and back up. */
+  bow: moose("", "   __ \\\\_//", '  /__ \\ /".', "  || ||"),
+  /** Head down at the grass, nibbling: the snout up, then down. */
+  graze: [moose("", "   ___", "  /__ \\\\_//", '  || || /".'), moose("", "   ___", "  /__ \\\\_//", '  || || /",')],
+  /** Startled: head up, and a `[!]` over its antlers. */
+  alert: moose("    [!]", "   \\\\_//", '   __/".', "  /__ |", "  || ||"),
+  /** Running: legs stretched out, kicking up dust behind, then gathered under it. */
+  run: [moose("   \\\\_//", '   __/".', "  /__ |", " .// \\\\"), moose("   \\\\_//", '   __/".', "  /__ |", "  \\\\ //")],
+  /** Walking: the same strides, without the dust. */
+  walk: [moose("   \\\\_//", '   __/".', "  /__ |", "  // \\\\"), moose("   \\\\_//", '   __/".', "  /__ |", "  \\\\ //")],
+} as const;
+
+/** A drawing of the moose facing west: the drawing facing east, mirrored. Its feet are then in column MOOSE_WIDTH - 1 - MOOSE_FEET. */
+export function mooseFacingWest(rows: readonly string[]): readonly string[] {
+  return mirror([...rows]);
+}
 
 /** The lure in the air and on the water, and what the line pulls up. */
 export const LURE = "o";

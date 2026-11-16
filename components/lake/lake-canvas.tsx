@@ -13,6 +13,7 @@ import {
 } from "@/lib/lake/birds";
 import { bobberUnder, linePath, lureOnScreen, rod, traceLine } from "@/lib/lake/cast";
 import { fishShape } from "@/lib/lake/fish";
+import { createMoose, mooseDrawing, mooseMoving, stepMoose } from "@/lib/lake/moose";
 import {
   WAVE_LIFE,
   cast,
@@ -146,6 +147,8 @@ export function LakeCanvas(props: LakeCanvasProps) {
     let lastPointerType = "mouse";
     // The birds in the air, if any, and when the next set off, by the lake's clock.
     let flight: Flight | null = null;
+    // The moose by the east shore, on a lake that has one.
+    const moose = state.lake ? createMoose(state.lake, Math.random) : null;
     let nextFlight = state.time + FIRST_FLIGHT_MIN + Math.random() * (FIRST_FLIGHT_MAX - FIRST_FLIGHT_MIN);
 
     // The lake's texture, kept per square of cells: it never changes, so it is only worked out once.
@@ -405,6 +408,24 @@ export function LakeCanvas(props: LakeCanvasProps) {
         }
       }
 
+      // The moose, at its exact position so it moves smoothly, its feet on its spot. Each row is solid from
+      // its first character to its last, like the boat's, so the woods don't show through it. The `[!]` is bright.
+      if (moose) {
+        const { rows: drawing, feet } = mooseDrawing(moose);
+        const at = project(moose.at);
+        for (let r = 0; r < drawing.length; r++) {
+          const first = drawing[r].search(/\S/);
+          if (first < 0) continue;
+          const last = drawing[r].trimEnd().length - 1;
+          const x = (c: number) => at.x - camera.x + (c - feet) * cellW;
+          const y = at.y - camera.y + (r - (drawing.length - 1)) * cellH;
+          if (x(last) < -cellW || x(first) > width + cellW || y < -cellH || y > height + cellH) continue;
+          ctx!.clearRect(x(first) - cellW / 2, y - cellH / 2, (last - first + 1) * cellW, cellH);
+          ctx!.fillStyle = colors[r === 0 ? BONE : ASH];
+          for (let c = first; c <= last; c++) if (drawing[r][c] !== " ") ctx!.fillText(drawing[r][c], x(c), y);
+        }
+      }
+
       // The boat sits on top of the water at its exact position, not snapped to a cell. Each row is
       // solid from its first to its last character, so nothing shows through the hull.
       // While a line is out the paddle is stowed, so the rod stands clear of it.
@@ -480,10 +501,11 @@ export function LakeCanvas(props: LakeCanvasProps) {
       for (const event of step(state, dt, { reducedMotion })) {
         if (event === "caught") latest.current.onHaul(state.caughtFrom);
       }
+      if (moose && state.lake) stepMoose(moose, state.lake, state.boat, dt, Math.random, reducedMotion);
       const cameraMoving = follow(dt);
       const birdsUp = flyBirds();
       draw();
-      if (isActive(state) || cameraMoving || birdsUp) requestFrame();
+      if (isActive(state) || cameraMoving || birdsUp || (moose && mooseMoving(moose))) requestFrame();
       // Only the water and the fish are moving: a few pictures a second are enough for that.
       else if (!reducedMotion) drift = window.setTimeout(requestFrame, DRIFT_MS);
       else lastTime = 0;

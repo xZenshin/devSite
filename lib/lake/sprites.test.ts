@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PADDLE_FRAMES } from "./game";
-import { ANGLER_SPRITES, BIRD, BIRD_NORTH, BOAT_SPRITES, FISH_SHAPES } from "./sprites";
+import { ANGLER_SPRITES, BIRD, BIRD_NORTH, BOAT_SPRITES, FISH_SHAPES, MOOSE, MOOSE_FEET, mooseFacingWest } from "./sprites";
 
 describe("the bird's drawings", () => {
   it("keeps the body in the middle of every drawing, flying either way, so flapping doesn't make it jump", () => {
@@ -19,6 +19,32 @@ describe("the bird's drawings", () => {
   it("flies north upside down: wings raised going south are lowered going north", () => {
     expect(BIRD_NORTH[0]).toEqual(["     ", " /^\\ ", "/   \\"]);
     expect(BIRD_NORTH[2]).toEqual(["\\   /", " \\^/ ", "     "]);
+  });
+});
+
+describe("the moose's drawings", () => {
+  const all = [MOOSE.stand, MOOSE.ear, MOOSE.tail, MOOSE.bow, ...MOOSE.graze, MOOSE.alert, ...MOOSE.run, ...MOOSE.walk];
+
+  it("draws every pose the same size, a row for the [!] on top, so nothing jumps", () => {
+    for (const drawing of all) {
+      expect(drawing).toHaveLength(5);
+      for (const row of drawing) expect(row).toHaveLength(MOOSE.stand[0].length);
+    }
+    expect(MOOSE.alert[0].trim()).toBe("[!]");
+    for (const drawing of all.filter((d) => d !== MOOSE.alert)) expect(drawing[0].trim()).toBe("");
+  });
+
+  it("keeps its legs either side of its feet in every pose", () => {
+    for (const drawing of all) {
+      const legs = drawing[4];
+      expect(legs[MOOSE_FEET]).toBe(" ");
+      expect(legs.slice(MOOSE_FEET - 2, MOOSE_FEET).trim()).toHaveLength(2);
+      expect(legs.slice(MOOSE_FEET + 1, MOOSE_FEET + 3).trim()).toHaveLength(2);
+    }
+  });
+
+  it("mirrors the [!] the right way round, facing west", () => {
+    expect(mooseFacingWest(MOOSE.alert)[0].trim()).toBe("[!]");
   });
 });
 
