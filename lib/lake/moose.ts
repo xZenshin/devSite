@@ -33,7 +33,7 @@ const NEW_SPOT = [0.08, 0.3] as const;
 /** The distance covered with each stride: its legs change between the two drawings of a stride this often. */
 const STRIDE = 22;
 /** A twitch lasts this long, and comes this often. */
-const TWITCH_TIME = 0.2;
+const TWITCH_TIME = 0.3;
 const TWITCH_EVERY = [2, 5] as const;
 /** How often it grazes, how long its head takes to go down (and up), and how long it stays down. */
 const GRAZE_EVERY = [8, 15] as const;
@@ -227,9 +227,24 @@ export function stepMoose(moose: Moose, lake: Lake, boat: Vec, dt: number, rng: 
   }
 }
 
-/** Whether the moose is on the move, so the picture needs redrawing every frame. */
+/** How long the `[!]` shakes when it appears, how far either side at first (in pixels), and how fast (shakes a second). */
+const SHAKE_TIME = 0.45;
+const SHAKE = 4.0;
+const SHAKE_RATE = 14;
+
+/**
+ * How far the `[!]` is shaken sideways just now, in pixels: a quick little
+ * shake as it appears, dying away; nothing after that, nor with `still`
+ * (reduced motion).
+ */
+export function alertShake(moose: Moose, still = false): number {
+  if (still || moose.mode !== "alert" || moose.t >= SHAKE_TIME) return 0;
+  return Math.sin(moose.t * SHAKE_RATE * 2 * Math.PI) * SHAKE * (1 - moose.t / SHAKE_TIME);
+}
+
+/** Whether the moose is on the move, or its `[!]` shaking, so the picture needs redrawing every frame. */
 export function mooseMoving(moose: Moose): boolean {
-  return moose.mode === "flee" || moose.mode === "return";
+  return moose.mode === "flee" || moose.mode === "return" || (moose.mode === "alert" && moose.t < SHAKE_TIME);
 }
 
 /**

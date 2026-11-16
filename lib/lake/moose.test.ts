@@ -3,6 +3,7 @@ import { createLake, shoreDistance, type Lake } from "./lake";
 import {
   ALERT_RADIUS,
   ALERT_TIME,
+  alertShake,
   createMoose,
   mooseDrawing,
   mooseMoving,
@@ -123,6 +124,38 @@ describe("the moose", () => {
     expect(moose.at).toEqual(at);
     run(moose, lake, FAR, DT * 2, numbers(5), true);
     expect(moose.mode).toBe("idle");
+  });
+});
+
+describe("alertShake", () => {
+  it("shakes the [!] a little from side to side as it appears, then holds it still", () => {
+    const lake = createLake(7);
+    const moose = createMoose(lake, numbers(3));
+    expect(alertShake(moose)).toBe(0);
+    run(moose, lake, { x: moose.at.x - 150, y: moose.at.y }, DT, numbers(1));
+    expect(moose.mode).toBe("alert");
+
+    const shakes: number[] = [];
+    while (moose.mode === "alert" && moose.t < 0.5) {
+      shakes.push(alertShake(moose));
+      // Drawn every frame while it shakes, so the shake is smooth.
+      expect(mooseMoving(moose)).toBe(moose.t < 0.35);
+      stepMoose(moose, lake, { x: moose.at.x - 150, y: moose.at.y }, DT / 4, numbers(1));
+    }
+    // Both ways, never more than a pixel and a half, and still by the end.
+    expect(Math.min(...shakes)).toBeLessThan(-0.3);
+    expect(Math.max(...shakes)).toBeGreaterThan(0.3);
+    for (const shake of shakes) expect(Math.abs(shake)).toBeLessThanOrEqual(1.5);
+    expect(shakes.at(-1)).toBe(0);
+    expect(mooseMoving(moose)).toBe(false);
+  });
+
+  it("doesn't shake with reduced motion", () => {
+    const lake = createLake(7);
+    const moose = createMoose(lake, numbers(3));
+    run(moose, lake, { x: moose.at.x - 150, y: moose.at.y }, 0.1, numbers(1), true);
+    expect(moose.mode).toBe("alert");
+    expect(alertShake(moose, true)).toBe(0);
   });
 });
 

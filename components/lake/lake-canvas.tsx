@@ -13,7 +13,7 @@ import {
 } from "@/lib/lake/birds";
 import { bobberUnder, linePath, lureOnScreen, rod, traceLine } from "@/lib/lake/cast";
 import { fishShape } from "@/lib/lake/fish";
-import { createMoose, mooseDrawing, mooseMoving, stepMoose } from "@/lib/lake/moose";
+import { alertShake, createMoose, mooseDrawing, mooseMoving, stepMoose } from "@/lib/lake/moose";
 import {
   WAVE_LIFE,
   cast,
@@ -413,11 +413,13 @@ export function LakeCanvas(props: LakeCanvasProps) {
       if (moose) {
         const { rows: drawing, feet } = mooseDrawing(moose);
         const at = project(moose.at);
+        // The `[!]` on the top row shakes a little from side to side as it appears.
+        const shake = alertShake(moose, reducedMotion);
         for (let r = 0; r < drawing.length; r++) {
           const first = drawing[r].search(/\S/);
           if (first < 0) continue;
           const last = drawing[r].trimEnd().length - 1;
-          const x = (c: number) => at.x - camera.x + (c - feet) * cellW;
+          const x = (c: number) => at.x - camera.x + (c - feet) * cellW + (r === 0 ? shake : 0);
           const y = at.y - camera.y + (r - (drawing.length - 1)) * cellH;
           if (x(last) < -cellW || x(first) > width + cellW || y < -cellH || y > height + cellH) continue;
           ctx!.clearRect(x(first) - cellW / 2, y - cellH / 2, (last - first + 1) * cellW, cellH);
