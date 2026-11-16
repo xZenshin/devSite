@@ -41,6 +41,39 @@ export function hasDot(col: number, row: number): boolean {
   return h % 1000 < DOT_DENSITY * 10;
 }
 
+/**
+ * A number in [0, 1) that depends only on its arguments: the same cell (or
+ * lattice point) and salt always give the same number, and neighbours differ.
+ */
+export function scatter(a: number, b: number, salt = 0): number {
+  let h = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263) ^ Math.imul(salt | 0, 1274126177);
+  h = Math.imul(h ^ (h >>> 15), 2246822519);
+  h = Math.imul(h ^ (h >>> 13), 3266489917);
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+
+/**
+ * Smooth noise in [0, 1): random values at whole-number points, blended in
+ * between. Nearby points get similar values, so it draws patches, not specks.
+ */
+export function patchiness(x: number, y: number, salt = 0): number {
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const fx = x - x0;
+  const fy = y - y0;
+  const sx = fx * fx * (3 - 2 * fx);
+  const sy = fy * fy * (3 - 2 * fy);
+  const top = scatter(x0, y0, salt) * (1 - sx) + scatter(x0 + 1, y0, salt) * sx;
+  const bottom = scatter(x0, y0 + 1, salt) * (1 - sx) + scatter(x0 + 1, y0 + 1, salt) * sx;
+  return top * (1 - sy) + bottom * sy;
+}
+
+/** The point of the world at the middle of a character cell of the screen plane. */
+export function cellCentre(col: number, row: number, cellW: number, cellH: number): Vec {
+  return unproject({ x: (col + 0.5) * cellW, y: (row + 0.5) * cellH });
+}
+
 /** Where a cast aimed at `target` lands: there, or at full range in that direction. */
 export function clampCast(from: Vec, target: Vec, range: number): Vec {
   const d = distance(from, target);

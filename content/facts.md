@@ -59,13 +59,19 @@ education out of it instead of reading a list.
 
 - Sail: right-click on the water and the boat sails to that spot. Holding the right mouse
   button down keeps steering.
-- Islands: small islands with palm trees, rocks or a lighthouse are scattered over the lake,
-  in new places on every visit. The boat can't sail over them; it steers around them, and a
-  lure thrown onto an island lands in the water by its shore.
+- The lake: it has a shore, and a different shape on every visit. The boat starts at the end
+  of a jetty. It can't leave the water; it goes round the jetty and the rocks, and reeds along
+  the shore slow it down. A lure thrown at the shore, the jetty or a rock lands in the water
+  beside it.
+- Fish: the dim shapes under the surface are fish, one for everything still to be caught.
+  Projects, jobs and education each have their own fishing ground, marked by a buoy with a
+  flag. The first is in sight of the jetty; the others take some paddling to find.
 - Cast: move the pointer to where the lure should land and press Q. The lure only reaches a
   limited distance from the boat, so sail closer to fish further away.
-- Wait: after a few seconds something bites and is reeled in by itself. Sending the boat
-  somewhere else while the line is out brings the line back empty.
+- Wait: a lure that lands near a fish is taken within a second or two, and brings up something
+  from that fishing ground. Anywhere else the wait is a few seconds longer and the catch can
+  be anything. It is reeled in by itself. Sending the boat somewhere else while the line is
+  out brings the line back empty.
 - Catch: a card shows what was caught, with a link to its page, and the catch goes into the
   basket in the top right corner. The basket is remembered between visits, and "release all"
   empties it.

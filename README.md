@@ -38,18 +38,30 @@ Visitors fish the portfolio out of it:
 
 - **Right-click** the water and the boat sails there, trailing a wake that fades. **Q** casts the lure
   at the pointer. On touch screens a move/cast switch decides what a tap does.
-- Small islands (palm, rocks, lighthouse) are scattered in new places on every visit. The boat
-  slides around them instead of sailing over them.
-- After a few seconds something bites: one of the projects, jobs or degrees, picked at random
-  from what hasn't been caught yet, or now and then an old boot. Catches go into a basket that
-  is kept in the browser's `localStorage`.
+- The lake has a shore, and a new shape on every visit. The boat starts moored at a jetty on the
+  far shore. The water is thick with specks in the shallows and nearly empty where it is deep.
+  Rocks stand in it, which the boat goes round; reed beds line the shore, which slow it down;
+  and lily pads float in the shallows.
+- The water is never quite still: gusts of wind ruffle the surface as they cross it and bend
+  the reeds, waves lap at the shore, the light glints here and there, and the kayak bobs.
+- Fish are dim shapes under the surface, one for everything still to be caught. Projects, jobs
+  and degrees each keep to their own fishing ground, marked by a buoy, and a shoal thins out as
+  the basket fills. A lure that lands near a fish is taken within a second or two, and brings up
+  something of that shoal's kind.
+- Out in open water the wait is longer, and what bites is picked at random from what hasn't
+  been caught yet, or now and then is an old boot. Catches go into a basket that is kept in the
+  browser's `localStorage`.
 - **Skip fishing** leads to [/projects](app/projects/page.tsx), the same things as a plain list.
 
 The catches are built from the same Markdown as the pages ([lib/catches.ts](lib/catches.ts)),
-so the lake can't offer anything the site doesn't have. The rules (sailing, casting, what
-bites, how a ripple is drawn as characters) are pure functions in [lib/lake/](lib/lake/) with
-unit tests; [the canvas component](components/lake/lake-canvas.tsx) only draws them, and only
-while something is moving. With reduced motion the game still works, without the animation.
+so the lake can't offer anything the site doesn't have. The rules (the lake's shape, sailing,
+casting, where the fish swim, what bites, which character each cell shows and how the water
+moves) are pure functions
+in [lib/lake/](lib/lake/) with unit tests; [the canvas component](components/lake/lake-canvas.tsx)
+only draws them. It redraws every frame while the boat, the line or the surface is moving, and
+ten times a second at rest, while only the water and the fish are moving. With reduced motion
+the game still works, without the animation: the water and the fish keep still and nothing is
+redrawn at rest.
 
 ## Architecture
 

@@ -1,85 +1,173 @@
-import type { IslandKind } from "./islands";
+/** Every drawing of the kayak is this many characters wide; the paddler sits in the middle column. */
+const KAYAK_WIDTH = 21;
+/** A drawing has at least this many rows. It may have more: see standTogether. */
+const KAYAK_ROWS = 5;
 
 /**
- * The boat as outline drawings, one per heading (0 east, then clockwise in
- * eighths, as headingIndex returns them). Every sprite has the same number of
- * rows and is drawn centred on the boat, so turning doesn't make it jump.
+ * A drawing typed as it looks. Rows are filled out with spaces to the kayak's
+ * width. A blank row is an empty line, and blank rows at the bottom can be left out.
  */
-export const BOAT_SPRITES: readonly (readonly string[])[] = [
-  // east
-  [
-    "        |\\       ",
-    "        | \\      ",
-    "        |__\\     ",
-    " _______|________",
-    " |  o   o   o   /",
-    " |_____________/ ",
-  ],
-  // south-east
-  [
-    "        |\\       ",
-    "        | \\      ",
-    "        |__\\     ",
-    "  ______|______  ",
-    "  \\  o   o   o \\ ",
-    "   \\____________\\",
-  ],
-  // south
-  [
-    "        |        ",
-    "        |)       ",
-    "        |_)      ",
-    "    ____|____    ",
-    "    \\ o   o /    ",
-    "     \\__V__/     ",
-  ],
-  // south-west
-  [
-    "       /|        ",
-    "      / |        ",
-    "     /__|        ",
-    "  ______|______  ",
-    " / o   o   o  /  ",
-    "/____________/   ",
-  ],
-  // west
-  [
-    "       /|        ",
-    "      / |        ",
-    "     /__|        ",
-    "________|_______ ",
-    "\\   o   o   o  | ",
-    " \\_____________| ",
-  ],
-  // north-west
-  [
-    "       /|        ",
-    "      / |        ",
-    "     /__|        ",
-    " _______|_____   ",
-    " \\ o   o   o  \\  ",
-    "  \\____________\\ ",
-  ],
-  // north
-  [
-    "        |        ",
-    "       (|        ",
-    "      (_|        ",
-    "     ___|___     ",
-    "    /  [_]  \\    ",
-    "   /_________\\   ",
-  ],
-  // north-east
-  [
-    "        |\\       ",
-    "        | \\      ",
-    "        |__\\     ",
-    "   _____|_______ ",
-    "  /  o   o   o / ",
-    " /____________/  ",
-  ],
+function art(drawing: string): string[] {
+  const rows = drawing.replace(/^\n|\n$/g, "").split("\n");
+  while (rows.length < KAYAK_ROWS) rows.push("");
+  return rows.map((row) => row.padEnd(KAYAK_WIDTH));
+}
+
+/**
+ * Lays one drawing over another, `down` rows lower: every character but a
+ * space covers what is beneath it. The drawings needn't be the same size.
+ */
+function stack(under: string[], over: string[], down = 0): string[] {
+  let used = over.length;
+  while (used > 0 && over[used - 1].trim() === "") used--;
+  return Array.from({ length: Math.max(under.length, used + down) }, (_, r) => {
+    const below = under[r] ?? "";
+    const above = over[r - down] ?? "";
+    return Array.from({ length: Math.max(below.length, above.length, KAYAK_WIDTH) }, (_, c) =>
+      (above[c] ?? " ") === " " ? (below[c] ?? " ") : above[c],
+    ).join("");
+  });
+}
+
+/**
+ * Puts blank rows on top of the shorter drawings, so that all of them have
+ * the same number of rows and stand on the same bottom row.
+ */
+function standTogether(sets: string[][][]): string[][][] {
+  const height = Math.max(...sets.flat().map((drawing) => drawing.length));
+  const blank = " ".repeat(KAYAK_WIDTH);
+  return sets.map((frames) =>
+    frames.map((drawing) => [...Array<string>(height - drawing.length).fill(blank), ...drawing]),
+  );
+}
+
+const MIRRORED: Record<string, string> = { "/": "\\", "\\": "/", "(": ")", ")": "(" };
+
+/** A drawing as seen in a mirror: what faced west faces east. */
+function mirror(rows: string[]): string[] {
+  return rows.map((row) => [...row].reverse().map((char) => MIRRORED[char] ?? char).join(""));
+}
+
+/**
+ * The paddler seen from the side, facing west, once per position of the
+ * paddle: at rest, then on round as he paddles. A blade goes into the water
+ * ahead of him and is pulled back past the hull, while the other swings over.
+ * His seat is the middle of the drawing; the hull is drawn underneath.
+ */
+const PADDLER = [
+  art(String.raw`
+    \
+      \   O,
+        \/ )
+          \
+            \
+`),
+  art(String.raw`
+
+  _ _ _ _ O, _ _ _
+        _/ )
+`),
+  art(String.raw`
+            /
+          O,
+        // )
+      /
+    /
+`),
+  art(String.raw`
+        |
+        | O,
+        |/ )
+        |
+        |
+`),
 ];
 
+/** The hull from the side, with a gap where the paddler sits: level, bow up, and bow down. */
+const HULL_WEST = art(String.raw`
+
+
+\_______    ________/
+`);
+const HULL_NORTH_WEST = art(String.raw`
+
+
+'-._____    ______.-'
+                  
+`);
+const HULL_SOUTH_WEST = art(String.raw`
+
+
+'-._____    ______.-'
+`);
+
+/** The kayak from above, paddler and all: heading away from the viewer, and towards. */
+const HULL_NORTH = art(String.raw`
+          .
+         / \
+         | |
+         | |
+         (O)
+         | |
+         | |
+         \_/
+`);
+const HULL_SOUTH = art(String.raw`
+         / \
+         | |
+         | |
+         (O)
+         | |
+         | |
+         \ /
+          V
+`);
+
+/**
+ * The paddle held across the kayak: level, and with the left blade in the
+ * water. Three rows: above the paddler, level with him, and below. The gap in
+ * the middle is where he sits.
+ */
+const PADDLE_LEVEL = art(String.raw`
+
+  _ _ _ _   _ _ _ _
+`);
+const PADDLE_LEFT = art(String.raw`
+              _.-'
+      _.-   -'
+   .-'
+`);
+/** Seen from behind or in front the paddle dips to one side, then the other. */
+const PADDLE_ACROSS = [PADDLE_LEVEL, PADDLE_LEFT, PADDLE_LEVEL, mirror(PADDLE_LEFT)];
+
+const fromTheSide = (hull: string[]) => PADDLER.map((paddler) => stack(hull, paddler));
+const fromAbove = (hull: string[]) => {
+  // The paddle goes on whichever row of the hull the paddler's head is drawn on.
+  const seat = hull.findIndex((row) => row.includes("O"));
+  return PADDLE_ACROSS.map((paddle) => stack(hull, paddle, seat - 1));
+};
+
+const WEST = fromTheSide(HULL_WEST);
+const NORTH_WEST = fromTheSide(HULL_NORTH_WEST);
+const SOUTH_WEST = fromTheSide(HULL_SOUTH_WEST);
+
+/**
+ * The boat: a man in a kayak. One set of drawings per heading (0 east, then
+ * clockwise in eighths, as headingIndex returns them), and in each set one
+ * drawing per position of the paddle (as paddleFrame returns them; 0 is the
+ * paddle at rest). They are all the same size and drawn centred on the boat,
+ * so neither turning nor paddling makes it jump.
+ */
+export const BOAT_SPRITES: readonly (readonly (readonly string[])[])[] = standTogether([
+  WEST.map(mirror), // east
+  SOUTH_WEST.map(mirror), // south-east
+  fromAbove(HULL_SOUTH), // south
+  SOUTH_WEST,
+  WEST,
+  NORTH_WEST,
+  fromAbove(HULL_NORTH), // north
+  NORTH_WEST.map(mirror), // north-east
+]);
 
 /** The lure in the air and on the water, and what the line pulls up. */
 export const LURE = "o";
@@ -89,59 +177,9 @@ export const BITE_MARK = "!";
 export const AIM = "+";
 export const WATER_DOT = "·";
 
-export interface IslandSprite {
-  rows: readonly string[];
-  /** The cell [column, row] drawn on the island's centre: the middle of its shoreline. */
-  anchor: readonly [number, number];
-}
-
-/**
- * One drawing per kind of island. The shoreline follows ISLAND_RADIUS in
- * islands.ts at the default 14px font, so the boat stops at the beach. Each
- * row is solid land from its first to its last character: water, wake and
- * ripples don't show through.
- */
-export const ISLAND_SPRITES: Record<IslandKind, IslandSprite> = {
-  palm: {
-  rows: [
-    "         __ _.--..--._ _",
-    "     .-' _/   _/\\_   \\_'-.",
-    "    |__ /   _/\\__/\\_   \\__|",
-    "       |___/\\_\\__/  \\___|",
-    "              \\__/",
-    "              \\__/",
-    "               \\__/",
-    "                \\__/",
-    "             ____\\__/___",
-    "       . - '             ' -.",
-    "      /                      \\",
-    "~~~~~~~  ~~~~~ ~~~~~  ~~~ ~~~  ~~~~~",
-  ],
-  anchor: [17, 10],
-  },
-  rocks: {
-    rows: [
-      "      /\\      ",
-      "   /\\/  \\     ",
-      "  /  \\   \\/\\  ",
-      " /____\\__/__\\ ",
-    ],
-    anchor: [7, 2],
-  },
-  ship: {
-    rows: [
-      "          /|\\",
-      "       /__| )",
-      "     /____| ))",
-      "   /______| )))",
-      " /________|  )))",
-      "         _|____))",
-      " \\======| o o /",
-      "~~~~~~~~~~~~~~~~~"
-    ],
-    anchor: [8, 6],
-  },
-};
+/** A fish under the surface, swimming east and swimming west. */
+export const FISH_EAST = "><>";
+export const FISH_WEST = "<><";
 
 /** The character for a stretch of fishing line running in direction (dx, dy) on screen. */
 export function lineChar(dx: number, dy: number): string {

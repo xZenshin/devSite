@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import type { Catch } from "@/lib/catches";
-import { pickHaul, type Haul } from "@/lib/lake/game";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { Catch, CatchKind } from "@/lib/catches";
+import { pickHaul, type Haul, type Stock } from "@/lib/lake/game";
 import { useChatContext } from "../chat/chat-provider";
 import { useMediaQuery } from "../use-media-query";
 import { Basket } from "./basket";
@@ -25,8 +25,17 @@ export function LakeGame({ catches, children }: { catches: Catch[]; children: Re
   const [card, setCard] = useState<{ haul: Haul; n: number } | null>(null);
   const history = useRef({ firstCast: true, lastWasJunk: false, hauls: 0 });
 
-  const onHaul = useCallback(() => {
-    const haul = pickHaul(catches, new Set(getBasket()), history.current, Math.random);
+  // What is left to catch of each kind: that many fish swim in its shoal.
+  const stock = useMemo(() => {
+    const left: Stock = {};
+    for (const item of catches) {
+      if (!caught.includes(item.id)) left[item.kind] = (left[item.kind] ?? 0) + 1;
+    }
+    return left;
+  }, [catches, caught]);
+
+  const onHaul = useCallback((shoal: CatchKind | null) => {
+    const haul = pickHaul(catches, new Set(getBasket()), history.current, Math.random, shoal);
     history.current = { firstCast: false, lastWasJunk: haul.type === "junk", hauls: history.current.hauls + 1 };
     if (haul.type === "catch") addToBasket(haul.item.id);
     setCard({ haul, n: history.current.hauls });
@@ -46,13 +55,19 @@ export function LakeGame({ catches, children }: { catches: Catch[]; children: Re
   return (
     // Cancels main's bottom padding: the lake is exactly one screen, then the footer.
     <section aria-label="Introduction and fishing lake" className="relative -mb-32 flex min-h-[100svh] flex-col">
-      <LakeCanvas onHaul={onHaul} onAction={dismiss} touchMode={touchMode} keysBlocked={chatOpen} />
+      <LakeCanvas onHaul={onHaul} onAction={dismiss} touchMode={touchMode} keysBlocked={chatOpen} stock={stock} />
 
-      {/* A fade from the window's left edge, so islands and wake drifting under the text don't
+      {/* A fade from the window's left edge, so the shore and wake drifting under the text don't
           tangle with it. Only where the text sits beside the boat; the boat never sails into it. */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-y-0 z-[5] hidden w-[40rem] bg-linear-to-r from-black via-black/80 via-60% to-transparent lg:-left-8 lg:block min-[72rem]:left-[calc((72rem-100vw)/2-2rem)]"
+      />
+
+      {/* On narrow screens the text sits above the boat, where the far shore is: the same fade, from the top. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 z-[5] h-[62svh] bg-linear-to-b from-black via-black/85 via-65% to-transparent lg:hidden"
       />
 
       {/* On screens wider than the page column, the text and the hints leave it and sit by the
