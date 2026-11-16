@@ -64,8 +64,10 @@ education out of it instead of reading a list.
   the shore slow it down. A lure thrown at the shore, the jetty or a rock lands in the water
   beside it.
 - Fish: the dim shapes under the surface are fish, one for everything still to be caught.
-  Projects, jobs and education each have their own fishing ground, marked by a buoy with a
-  flag. The first is in sight of the jetty; the others take some paddling to find.
+  They keep to three fishing grounds, each marked by a buoy with a flag. Everything to catch
+  is shared out evenly between the grounds, with projects kept together, and jobs and
+  education kept together, as far as the numbers allow. The first ground is in sight of the
+  jetty; the others take some paddling to find.
 - Cast: move the pointer to where the lure should land and press Q. The lure only reaches a
   limited distance from the boat, so sail closer to fish further away.
 - Wait: a lure that lands close to a fish is taken within a second or two, and brings up

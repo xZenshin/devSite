@@ -1,4 +1,3 @@
-import type { CatchKind } from "../catches";
 import { distance, patchiness, type Vec } from "./world";
 
 /**
@@ -40,6 +39,18 @@ const LIGHTHOUSE_WEST = 640;
 const LIGHTHOUSE_HALF_WIDTH = 60;
 /** How far up the beach the whole of its foot stands. */
 const LIGHTHOUSE_FOOTING = 16;
+/**
+ * Where the house stands: this far east of the jetty, and this far up the land
+ * from where the jetty comes ashore, so the path from the jetty climbs to its
+ * door (in the west end of the house, the front) over a few rows, about five
+ * columns east for each row up. Half the width of its foot is a little over
+ * half its drawing, and both ends of its foot are at least HOUSE_FOOTING from
+ * the water, however the shore runs.
+ */
+const HOUSE_EAST = 280;
+const HOUSE_INLAND = 200;
+const HOUSE_HALF_WIDTH = 145;
+const HOUSE_FOOTING = 110;
 
 /** How far from the shore the water reaches its full depth. */
 const DEEP_AT = 460;
@@ -49,16 +60,15 @@ const BANK_SIZE = 360;
 /** How much room the buoy that marks a fishing ground takes up. */
 export const BUOY_RADIUS = 10;
 
-/** The kinds of catch, each with fishing grounds of its own. The first is in sight of the jetty. */
-export const SHOAL_KINDS: readonly CatchKind[] = ["project", "experience", "education"];
+/** How many fishing grounds the lake has. The first is in sight of the jetty. */
+export const GROUNDS = 3;
 
 export interface Disc extends Vec {
   r: number;
 }
 
-/** A stretch of water where the fish of one kind keep to, marked by a buoy at its middle. */
+/** A stretch of water where a shoal of fish keeps to, marked by a buoy at its middle. */
 export interface Grounds {
-  kind: CatchKind;
   home: Vec;
 }
 
@@ -71,6 +81,8 @@ export interface Lake {
   jetty: { shore: Vec; end: Vec };
   /** The foot of the lighthouse, on the beach of the far shore, west of the jetty. The tower rises from it. */
   lighthouse: Vec;
+  /** The foot of the house, up the beach of the far shore, east of the jetty. A trail leads to it from the jetty. */
+  house: Vec;
   /** Rocks standing out of the water. The boat goes round them. */
   rocks: readonly Disc[];
   /** Reed beds along the shore. The boat pushes through them, slowly. */
@@ -225,6 +237,7 @@ export function createLake(seed: number): Lake {
     wobble,
     jetty: { shore: { x: 0, y: shoreY - JETTY_ASHORE }, end: { x: 0, y: JETTY_END_Y } },
     lighthouse: { x: 0, y: 0 },
+    house: { x: 0, y: 0 },
     rocks: [],
     reeds: [],
     lilies: [],
@@ -250,8 +263,8 @@ export function createLake(seed: number): Lake {
   const grounds: Grounds[] = [];
   const bearing = between(0.35, 1.2);
   const reach = between(330, 400);
-  grounds.push({ kind: SHOAL_KINDS[0], home: { x: Math.cos(bearing) * reach, y: Math.sin(bearing) * reach } });
-  for (const kind of SHOAL_KINDS.slice(1)) {
+  grounds.push({ home: { x: Math.cos(bearing) * reach, y: Math.sin(bearing) * reach } });
+  for (let i = 1; i < GROUNDS; i++) {
     const home = pick(
       () => somewhere(0.25, 0.72),
       (p) =>
@@ -259,7 +272,7 @@ export function createLake(seed: number): Lake {
         distance(p, start) > 700 &&
         apart(p, grounds.map((g) => g.home), 650),
     );
-    grounds.push({ kind, home });
+    grounds.push({ home });
   }
   const homes = grounds.map((g) => g.home);
 
@@ -300,24 +313,49 @@ export function createLake(seed: number): Lake {
     lilies.push({ ...at, r: between(60, 110) });
   }
 
-  return { ...lake, lighthouse: placeLighthouse(lake), grounds, rocks, reeds, lilies };
+  return {
+    ...lake,
+    lighthouse: placeAshore(lake, -LIGHTHOUSE_WEST, LIGHTHOUSE_HALF_WIDTH, LIGHTHOUSE_FOOTING),
+    house: upTheLand(lake, { x: HOUSE_EAST, y: lake.jetty.shore.y - HOUSE_INLAND }, HOUSE_HALF_WIDTH, HOUSE_FOOTING),
+    grounds,
+    rocks,
+    reeds,
+    lilies,
+  };
 }
 
 /**
- * Where the lighthouse stands: on the far shore, round from the jetty to the
- * west until the shore is LIGHTHOUSE_WEST along, and far enough up the beach
- * that both sides of its foot are on land, however the shore slopes there.
+ * A foot moved north, away from the lake, until both its ends, `halfWidth`
+ * either side of the middle, are at least `footing` from the water. A foot far
+ * enough up the land already stays where it is.
  */
-function placeLighthouse(lake: Lake): Vec {
+function upTheLand(lake: Lake, foot: Vec, halfWidth: number, footing: number): Vec {
+  let y = foot.y;
+  const clear = () => [-halfWidth, halfWidth].every((dx) => shoreDistance(lake, { x: foot.x + dx, y }) < -footing);
+  for (let tries = 0; tries < 200 && !clear(); tries++) y -= 4;
+  return { x: foot.x, y };
+}
+
+/**
+ * Where something stands on the far shore: round from the jetty, east for a
+ * positive `x` and west for a negative one, until the shore is that far along;
+ * and far enough up the beach that both sides of its foot, `halfWidth` either
+ * side of the middle, are at least `footing` from the water, however the shore
+ * slopes there.
+ */
+function placeAshore(lake: Lake, x: number, halfWidth: number, footing: number): Vec {
   const along = (angle: number, out: number): Vec => ({
     x: lake.centre.x + Math.cos(angle) * out,
     y: lake.centre.y + Math.sin(angle) * out,
   });
+  const way = Math.sign(x);
   let angle = NORTH;
-  while (angle > NORTH - Math.PI / 2 && along(angle, shoreRadius(lake, angle)).x > -LIGHTHOUSE_WEST) angle -= 0.01;
-  for (let inset = LIGHTHOUSE_FOOTING; ; inset += 4) {
+  while (Math.abs(angle - NORTH) < Math.PI / 2 && along(angle, shoreRadius(lake, angle)).x * way < Math.abs(x)) {
+    angle += way * 0.01;
+  }
+  for (let inset = footing; ; inset += 4) {
     const foot = along(angle, shoreRadius(lake, angle) + inset);
-    const sides = [-LIGHTHOUSE_HALF_WIDTH, LIGHTHOUSE_HALF_WIDTH].map((dx) => ({ x: foot.x + dx, y: foot.y }));
-    if (inset > 300 || sides.every((side) => shoreDistance(lake, side) < -LIGHTHOUSE_FOOTING)) return foot;
+    const sides = [-halfWidth, halfWidth].map((dx) => ({ x: foot.x + dx, y: foot.y }));
+    if (inset > 400 || sides.every((side) => shoreDistance(lake, side) < -footing)) return foot;
   }
 }

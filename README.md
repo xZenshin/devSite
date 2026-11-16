@@ -41,13 +41,17 @@ Visitors fish the portfolio out of it:
 - The lake has a shore, and a new shape on every visit. The boat starts moored at a jetty on the
   far shore. The water is thick with specks in the shallows and nearly empty where it is deep.
   Rocks stand in it, which the boat goes round; reed beds line the shore, which slow it down;
-  and lily pads float in the shallows.
+  and lily pads float in the shallows. On the far shore a lighthouse stands west of the jetty,
+  and a house east of it, with a trail along the beach to its door and smoke rising from its
+  chimney, leaning with the wind.
 - The water is never quite still: gusts of wind ruffle the surface as they cross it and bend
   the reeds, waves lap at the shore, the light glints here and there, and the kayak bobs.
-- Fish are dim shapes under the surface, one for everything still to be caught. Projects, jobs
-  and degrees each keep to their own fishing ground, marked by a buoy, and a shoal thins out as
-  the basket fills. A lure that lands near a fish is taken within a second or two, and brings up
-  something of that shoal's kind.
+  Now and then a bird flies over, or two together, up or down the screen.
+- Fish are dim shapes under the surface, small ones and bigger ones with a fin, one for
+  everything still to be caught. Everything is shared out evenly between three fishing grounds,
+  each marked by a buoy, keeping projects together and jobs and degrees together where the
+  numbers allow; a shoal thins out as the basket fills. A lure that lands near a fish is taken
+  within a second or two, and brings up something shared out to that shoal's grounds.
 - Away from the fish the wait is longer, and what snags the lure is junk (an old boot, a rusty
   can), with a reminder to fish near the buoys. Catches go into a basket that is kept in the
   browser's `localStorage`.

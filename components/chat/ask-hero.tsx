@@ -54,7 +54,9 @@ export function AskHero() {
               placeholder={focused ? TYPED_EXAMPLES[0] : ""}
               autoComplete="off"
               enterKeyHint="send"
-              className="min-h-16 w-full bg-transparent font-mono text-base placeholder:text-[13px] placeholder:text-ash focus-visible:outline-none sm:text-lg"
+              // What is typed is the same size as the typing demo and the placeholder. On touch screens
+              // it stays at 16px, below which iOS zooms the page in on focus.
+              className="min-h-16 w-full bg-transparent font-mono text-base placeholder:text-[13px] placeholder:text-ash focus-visible:outline-none pointer-fine:text-[13px]"
             />
             {/* The typing demo, drawn over the empty input with a block caret. */}
             {!question && !focused && (

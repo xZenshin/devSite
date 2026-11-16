@@ -215,6 +215,53 @@ export const LIGHTHOUSE: readonly string[] = [
 /** The lamp in the drawing of the lighthouse. */
 export const LAMP = "o";
 
+/**
+ * The house on the far shore, east of the jetty, seen from the side like the
+ * lighthouse. Its foot is the middle of the bottom row. The front is the gable
+ * end on the left, with the door in it (the gap between the `I`s, its threshold
+ * the `__` on the bottom row), where the path from the jetty ends. Smoke rises
+ * from the chimney (the `[_]`); see smoke.ts.
+ * 
+ * Taken from https://asciiart.website/artist.php?artist_id=128
+ */
+export const HOUSE: readonly string[] = [
+  "       ________[_]________       ",
+  "      /\\        ______    \\      ",
+  "     //_\\       \\    /\\    \\     ",
+  "    //___\\       \\__/  \\    \\    ",
+  "   //_____\\       \\ |[]|     \\   ",
+  "  //_______\\       \\|__|      \\  ",
+  " /XXXXXXXXXX\\                  \\ ",
+  "/_I_II  I__I_\\__________________\\",
+  "  I_I|  I__I_____[]_|_[]_____I   ",
+  "  I_II  I__I_____[]_|_[]_____I   ",
+  "  I II__I  I     XXXXXXX     I   ",
+];
+/** Where the chimney's top is in the drawing of the house: column, and row. */
+export const CHIMNEY = { col: HOUSE[0].indexOf("[_]") + 1, row: 0 };
+/** Where the door is: the first of the two columns of its opening, and the row of its threshold. */
+export const DOOR = { col: HOUSE[HOUSE.length - 1].indexOf("__"), row: HOUSE.length - 1 };
+
+/**
+ * A bird, seen from above as it flies down the screen (south), once per
+ * position of its wings: raised, level, lowered, level again, then round. Each
+ * drawing is five characters wide and three rows high, with the body (the `v`)
+ * in the middle of both, so flapping doesn't make it jump. See birds.ts.
+ */
+export const BIRD: readonly (readonly string[])[] = [
+  ["\\   /", " \\v/ ", "     "],
+  ["     ", "--v--", "     "],
+  ["     ", " /v\\ ", "/   \\"],
+  ["     ", "--v--", "     "],
+];
+
+const UPSIDE_DOWN: Record<string, string> = { "/": "\\", "\\": "/", v: "^", "^": "v" };
+
+/** The same bird flying up the screen (north): each drawing upside down, so its body points the way it flies. */
+export const BIRD_NORTH: readonly (readonly string[])[] = BIRD.map((drawing) =>
+  [...drawing].reverse().map((row) => [...row].map((char) => UPSIDE_DOWN[char] ?? char).join("")),
+);
+
 /** The lure in the air and on the water, and what the line pulls up. */
 export const LURE = "o";
 export const BOBBER_BITE = "O";
@@ -223,9 +270,17 @@ export const BITE_MARK = "!";
 export const AIM = "+";
 export const WATER_DOT = "·";
 
-/** A fish under the surface, swimming east and swimming west. */
-export const FISH_EAST = "><>";
-export const FISH_WEST = "<><";
+/**
+ * The fish under the surface, each drawn swimming east and swimming west: a
+ * small one, and a bigger one. A drawing's middle row (its body) is on the
+ * fish's row, its second column on the fish's column.
+ */
+export const FISH_SHAPES: readonly { east: readonly string[]; west: readonly string[] }[] = [
+  { east: ["><>"], west: ["<><"] },
+  { east: [" , ", ">()", " ' "], west: [" , ", "()<", " ` " ] },
+
+  
+];
 
 /** The character for a stretch of fishing line running in direction (dx, dy) on screen. */
 export function lineChar(dx: number, dy: number): string {

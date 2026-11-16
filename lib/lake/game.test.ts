@@ -29,6 +29,7 @@ import {
   paddleFrame,
   pickHaul,
   rippleRadius,
+  shareOut,
   snapshot,
   step,
   stockShoals,
@@ -332,28 +333,25 @@ describe("the lake", () => {
 
 describe("fish", () => {
   const SEED = 7;
-  const one = { project: 1 };
+  const one = [1];
 
-  it("has a shoal for each kind, as many fish strong as there is left to catch", () => {
-    const state = createGame({ seed: SEED, stock: { project: 3, experience: 2, education: 1 } });
-    expect(state.shoals.map((shoal) => [shoal.kind, shoal.fish.length])).toEqual([
-      ["project", 3],
-      ["experience", 2],
-      ["education", 1],
-    ]);
+  it("has a shoal for each fishing ground, as many fish strong as there is left to catch there", () => {
+    const state = createGame({ seed: SEED, stock: [3, 2, 1] });
+    expect(state.shoals.map((shoal) => shoal.home)).toEqual(state.lake!.grounds.map((grounds) => grounds.home));
+    expect(state.shoals.map((shoal) => shoal.fish.length)).toEqual([3, 2, 1]);
     expect(hasFish(state)).toBe(true);
   });
 
   it("thins and refills the shoals as what is left to catch changes", () => {
-    const state = createGame({ seed: SEED, stock: { project: 3 } });
-    stockShoals(state, { project: 1, education: 2 });
+    const state = createGame({ seed: SEED, stock: [3] });
+    stockShoals(state, [1, 0, 2]);
     expect(state.shoals.map((shoal) => shoal.fish.length)).toEqual([1, 0, 2]);
-    stockShoals(state, {});
+    stockShoals(state, []);
     expect(hasFish(state)).toBe(false);
   });
 
   it("has no fish in open water", () => {
-    const state = createGame({ stock: { project: 3 } });
+    const state = createGame({ stock: [3] });
     expect(state.shoals).toEqual([]);
     expect(hasFish(state)).toBe(false);
     expect(nearestFish(state, { x: 0, y: 0 })).toBeNull();
@@ -396,7 +394,7 @@ describe("fish", () => {
 
     expect(run(state, BITE_TIME + REEL_TIME + 0.1)).toEqual(["caught"]);
     expect(state.shoals[0].fish).toEqual([]);
-    expect(state.caughtFrom).toBe("project");
+    expect(state.caughtFrom).toBe(0);
   });
 
   it("snags junk on a lure that lands away from the fish, from no shoal, leaving the fish be", () => {
@@ -405,7 +403,7 @@ describe("fish", () => {
     state.boat = { x: fish.x, y: fish.y + 150 };
     cast(state, fish, () => 0);
     run(state, 10);
-    expect(state.caughtFrom).toBe("project");
+    expect(state.caughtFrom).toBe(0);
     stockShoals(state, one);
 
     const now = fishAt(state, 0, 0);
@@ -421,7 +419,7 @@ describe("fish", () => {
   });
 
   it("rings the surface now and then where a fish rises", () => {
-    const state = createGame({ seed: SEED, stock: { project: 3, experience: 2, education: 1 } });
+    const state = createGame({ seed: SEED, stock: [3, 2, 1] });
     const rings = new Set<string>();
     for (let t = 0; t < 30; t += DT) {
       step(state, DT);
@@ -445,7 +443,7 @@ describe("fish", () => {
   });
 
   it("keeps the fish and the surface still with reduced motion", () => {
-    const state = createGame({ seed: SEED, stock: { project: 3 } });
+    const state = createGame({ seed: SEED, stock: [3] });
     const before = fishAt(state, 0, 1);
     run(state, 20, { reducedMotion: true });
     expect(fishAt(state, 0, 1)).toEqual(before);
@@ -478,7 +476,7 @@ describe("casting", () => {
 
   /** A lake with one fish in it, and the boat a little way off the fish. */
   function besideAFish() {
-    const state = createGame({ seed: 7, stock: { project: 1 } });
+    const state = createGame({ seed: 7, stock: [1] });
     const fish = fishAt(state, 0, 0);
     state.boat = { x: fish.x, y: fish.y + 150 };
     return { state, fish };
@@ -591,20 +589,21 @@ describe("pickHaul", () => {
   ];
   const constant = (value: number) => () => value;
 
-  it("brings up something of the shoal's kind when a fish took the lure, and never junk", () => {
+  it("brings up something shared out to the fish's grounds when it took the lure, and never junk", () => {
     for (const roll of [0, 0.1, 0.5, 0.999]) {
-      expect(pickHaul(mixed, new Set(), "education", constant(roll))).toEqual({ type: "catch", item: mixed[2] });
-      expect(pickHaul(mixed, new Set(["p1"]), "project", constant(roll))).toEqual({ type: "catch", item: mixed[1] });
+      expect(pickHaul(mixed, new Set(), [mixed[2]], constant(roll))).toEqual({ type: "catch", item: mixed[2] });
+      const haul = pickHaul(mixed, new Set(["p1"]), [mixed[0], mixed[1]], constant(roll));
+      expect(haul).toEqual({ type: "catch", item: mixed[1] });
     }
   });
 
-  it("can reach everything of the shoal's kind not caught yet", () => {
+  it("can reach everything at the grounds not caught yet, whatever its kind", () => {
     const seen = new Set<string>();
     for (let i = 0; i < 30; i++) {
-      const haul = pickHaul(mixed, new Set(), "project", constant(i / 30));
+      const haul = pickHaul(mixed, new Set(), [mixed[1], mixed[2]], constant(i / 30));
       if (haul.type === "catch") seen.add(haul.item.id);
     }
-    expect(seen).toEqual(new Set(["p1", "p2"]));
+    expect(seen).toEqual(new Set(["p2", "e1"]));
   });
 
   it("brings up only junk away from the fish, which says the lake isn't fished out yet", () => {
@@ -625,7 +624,7 @@ describe("pickHaul", () => {
   });
 
   it("brings up junk from a shoal with nothing left in it", () => {
-    const haul = pickHaul(mixed, new Set(["e1"]), "education", constant(0));
+    const haul = pickHaul(mixed, new Set(["e1"]), [mixed[2]], constant(0));
     expect(haul).toMatchObject({ type: "junk", fishedOut: false });
   });
 
@@ -635,16 +634,42 @@ describe("pickHaul", () => {
   });
 });
 
+describe("shareOut", () => {
+  /** Things of the kinds spelled out, one letter each: p a project, e a job, d a degree. */
+  const items = (kinds: string) => [...kinds].map((kind, i) => ({ id: `${kind}${i}`, kind }));
+  const kindsOf = (grounds: { kind: string }[][]) => grounds.map((g) => g.map((item) => item.kind).join(""));
+
+  it("shares everything out evenly, keeping kinds together where it can", () => {
+    // Seven projects, two jobs and two degrees: two grounds of projects, and one of jobs and degrees.
+    expect(kindsOf(shareOut(items("pppppppeedd"), 3))).toEqual(["ppp", "pppp", "eedd"]);
+  });
+
+  it("puts evenness first, even if a kind has to be split", () => {
+    const grounds = shareOut(items("pppppppeeedd"), 3);
+    expect(grounds.map((g) => g.length)).toEqual([4, 4, 4]);
+  });
+
+  it("keeps everything, in order, each thing once", () => {
+    const all = items("ppppppeeeeedddd");
+    expect(shareOut(all, 3).flat()).toEqual(all);
+  });
+
+  it("leaves grounds empty when there are fewer things than grounds", () => {
+    expect(shareOut(items("p"), 3).map((g) => g.length).sort()).toEqual([0, 0, 1]);
+    expect(shareOut([], 3)).toEqual([[], [], []]);
+  });
+});
+
 describe("resuming", () => {
   it("comes back to the same lake, the boat lying where it was and facing the same way", () => {
-    const state = createGame({ seed: 11, stock: { project: 2 } });
+    const state = createGame({ seed: 11, stock: [2] });
     moveTo(state, { x: 300, y: 120 });
     run(state, 0.6);
     cast(state, { x: 500, y: 200 }, () => 0);
     run(state, 0.3);
     const kept = snapshot(state)!;
 
-    const again = createGame({ seed: 999, stock: { project: 2 }, resume: kept });
+    const again = createGame({ seed: 999, stock: [2], resume: kept });
     expect(again.lake).toEqual(state.lake);
     expect(again.boat).toEqual(state.boat);
     expect(again.heading).toBe(state.heading);

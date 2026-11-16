@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_FISH, SHOAL_SPREAD, stock, wander, type Shoal } from "./fish";
+import { MAX_FISH, SHOAL_SPREAD, fishShape, stock, wander, type Shoal } from "./fish";
 import { distance } from "./world";
 
 const HOME = { x: 400, y: -250 };
@@ -53,8 +53,24 @@ describe("wander", () => {
   });
 });
 
+describe("fishShape", () => {
+  it("gives each fish the same drawing every time, some small and some big", () => {
+    const shapes: number[] = [];
+    for (let shoal = 0; shoal < 3; shoal++) {
+      for (let id = 0; id < MAX_FISH; id++) {
+        const shape = fishShape(7, shoal, id);
+        expect(fishShape(7, shoal, id)).toBe(shape);
+        shapes.push(shape);
+      }
+    }
+    expect(new Set(shapes)).toEqual(new Set([0, 1]));
+    // Mostly small fish.
+    expect(shapes.filter((shape) => shape === 1).length).toBeLessThan(shapes.length / 2);
+  });
+});
+
 describe("stock", () => {
-  const shoal = (fish: number[]): Shoal => ({ kind: "project", home: HOME, fish, rise: 1 });
+  const shoal = (fish: number[]): Shoal => ({ home: HOME, fish, rise: 1 });
 
   it("fills a shoal with as many fish as there is left to catch, up to the most it shows", () => {
     const empty = shoal([]);

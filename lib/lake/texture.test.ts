@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createLake, shoreRadius, type Lake } from "./lake";
-import { ASH, BONE, DIM, glyphAt } from "./texture";
-import { hasDot, project } from "./world";
+import { createLake, onJetty, shoreRadius, type Lake } from "./lake";
+import { DOOR, HOUSE } from "./sprites";
+import { ASH, BONE, DIM, glyphAt, pathCells, standing } from "./texture";
+import { cellCentre, hasDot, project } from "./world";
 
 const CELL_W = 8.4;
 const CELL_H = 18;
@@ -65,6 +66,92 @@ describe("glyphAt", () => {
       const lake = createLake(seed);
       for (let angle = 0; angle < 6.2; angle += 0.4) {
         for (const glyph of around(lake, offShore(lake, angle, -300), 6, 3)) expect(glyph?.solid).toBe(true);
+      }
+    }
+  });
+
+  it("draws the water's edge thick, so the shore reads as a line, and the beach behind it sparse", () => {
+    for (const seed of SEEDS) {
+      const lake = createLake(seed);
+      /** The share of land cells, just up the beach all round the lake, that hold a character. */
+      const inked = (inland: number) => {
+        let land = 0;
+        let drawn = 0;
+        for (let angle = 0; angle < 6.28; angle += 0.02) {
+          const glyph = at(lake, offShore(lake, angle, -inland));
+          if (!glyph?.solid || glyph.sway) continue;
+          land++;
+          if (glyph.char !== " ") drawn++;
+        }
+        return drawn / land;
+      };
+      expect(inked(4)).toBeGreaterThan(0.75);
+      expect(inked(60)).toBeLessThan(0.55);
+    }
+  });
+
+  it("draws the house up the beach, its windows lit", () => {
+    for (const seed of SEEDS) {
+      const lake = createLake(seed);
+      const top = standing(HOUSE, lake.house, CELL_W, CELL_H);
+      HOUSE.forEach((line, r) => {
+        for (let c = 0; c < line.length; c++) {
+          if (line[c] === " ") continue;
+          const glyph = glyphAt(lake, top.col + c, top.row + r, CELL_W, CELL_H);
+          expect(glyph).toMatchObject({ char: line[c], solid: true });
+          if (r > 0 && "[]".includes(line[c])) expect(glyph?.tone).toBe(BONE);
+        }
+      });
+    }
+  });
+
+  it("paves a path that climbs in steps from the end of the jetty to the house's door", () => {
+    for (const seed of SEEDS) {
+      const lake = createLake(seed);
+      const cells = pathCells(lake, CELL_W, CELL_H);
+      const charAt = (col: number, row: number) => cells.get(`${col},${row}`)?.char;
+      const paving = [...cells].filter(([, glyph]) => "=#".includes(glyph.char)).map(([key]) => key.split(",").map(Number));
+      const rows = [...new Set(paving.map(([, row]) => row))].sort((a, b) => b - a);
+      expect(rows.length).toBeGreaterThanOrEqual(3);
+
+      // The lowest step is just above the end of the deck, and the highest just below the door.
+      const lowest = Math.min(...paving.filter(([, row]) => row === rows[0]).map(([col]) => col));
+      expect(onJetty(lake, cellCentre(lowest, rows[0] + 1, CELL_W, CELL_H))).toBe(true);
+      expect(onJetty(lake, cellCentre(lowest, rows[0], CELL_W, CELL_H))).toBe(false);
+      const top = standing(HOUSE, lake.house, CELL_W, CELL_H);
+      const door = { col: top.col + DOOR.col, row: top.row + DOOR.row };
+      // The door's threshold, and the frame either side of it, are in the house's front.
+      expect(glyphAt(lake, door.col, door.row, CELL_W, CELL_H)?.char).toBe("_");
+      expect(glyphAt(lake, door.col + 1, door.row, CELL_W, CELL_H)?.char).toBe("_");
+      expect(glyphAt(lake, door.col - 1, door.row, CELL_W, CELL_H)?.char).toBe("I");
+      expect(glyphAt(lake, door.col + 2, door.row, CELL_W, CELL_H)?.char).toBe("I");
+      // The highest step is right under the door, across its frame.
+      expect(rows.at(-1)).toBe(door.row + 1);
+      const highest = paving.filter(([, row]) => row === door.row + 1).map(([col]) => col);
+      expect(Math.min(...highest)).toBe(door.col - 1);
+      expect(Math.max(...highest)).toBe(door.col + 2);
+      // It climbs about as steeply as the drawing it is modelled on: some columns east for each row up.
+      const lowFrom = Math.min(...paving.filter(([, row]) => row === rows[0]).map(([col]) => col));
+      const across = (Math.min(...highest) - lowFrom) / (rows.length - 1);
+      expect(across).toBeGreaterThan(3);
+      expect(across).toBeLessThan(8);
+
+      rows.forEach((row, k) => {
+        const cols = paving.filter(([, r]) => r === row).map(([col]) => col);
+        const [from, to] = [Math.min(...cols), Math.max(...cols)];
+        // Each step is one unbroken run, further east than the one below, edged above and below.
+        expect(cols).toHaveLength(to - from + 1);
+        if (k > 0) expect(from).toBeGreaterThan(Math.min(...paving.filter(([, r]) => r === rows[k - 1]).map(([c]) => c)));
+        // Ends: `|` at the two ends of the path, `/` where a step meets the next.
+        expect(charAt(from - 1, row)).toBe(k === 0 ? "|" : "/");
+        expect(charAt(to + 1, row)).toBe(k === rows.length - 1 ? "|" : "/");
+      });
+
+      // On land, it is drawn as it is laid out; the deck and the house are drawn over it.
+      for (const [key, glyph] of cells) {
+        const [col, row] = key.split(",").map(Number);
+        const drawn = glyphAt(lake, col, row, CELL_W, CELL_H);
+        if (drawn?.char !== glyph.char) expect(drawn?.char).toMatch(/[=o|XI_ ]/);
       }
     }
   });

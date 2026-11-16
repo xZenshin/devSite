@@ -3,7 +3,7 @@ import {
   BOAT_RADIUS,
   JETTY_HALF_WIDTH,
   LAKE_RADIUS,
-  SHOAL_KINDS,
+  GROUNDS,
   createLake,
   depth,
   inLilies,
@@ -92,10 +92,24 @@ describe("createLake", () => {
     }
   });
 
-  it("has fishing grounds for every kind, out in the water and well apart, the first in sight of the jetty", () => {
+  it("stands the house east of the jetty and a little way from the water, and the lighthouse to the west", () => {
     for (const seed of SEEDS) {
       const lake = createLake(seed);
-      expect(lake.grounds.map((g) => g.kind)).toEqual(SHOAL_KINDS);
+      expect(lake.house.x).toBeGreaterThan(100);
+      expect(lake.lighthouse.x).toBeLessThan(-600);
+      // Both ends of the house's foot are a little way from the water, and well up the land from the jetty.
+      for (const dx of [-145, 145]) {
+        expect(shoreDistance(lake, { x: lake.house.x + dx, y: lake.house.y })).toBeLessThan(-109);
+      }
+      expect(lake.house.y).toBeLessThan(lake.jetty.shore.y - 150);
+      expect(lake.house.x - 145).toBeGreaterThan(JETTY_HALF_WIDTH);
+    }
+  });
+
+  it("has its fishing grounds out in the water and well apart, the first in sight of the jetty", () => {
+    for (const seed of SEEDS) {
+      const lake = createLake(seed);
+      expect(lake.grounds).toHaveLength(GROUNDS);
       const [first, ...others] = lake.grounds;
       expect(distance(first.home, START)).toBeLessThan(420);
       expect(first.home.y).toBeGreaterThan(100);

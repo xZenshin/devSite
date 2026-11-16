@@ -1,8 +1,18 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { CatchKind } from "@/lib/catches";
+import {
+  FIRST_FLIGHT_MAX,
+  FIRST_FLIGHT_MIN,
+  FLIGHT_GAP_MAX,
+  FLIGHT_GAP_MIN,
+  birdsAt,
+  flightOver,
+  planFlight,
+  type Flight,
+} from "@/lib/lake/birds";
 import { bobberUnder, linePath, lureOnScreen, rod, traceLine } from "@/lib/lake/cast";
+import { fishShape } from "@/lib/lake/fish";
 import {
   WAVE_LIFE,
   cast,
@@ -23,26 +33,30 @@ import {
 import {
   AIM,
   ANGLER_SPRITES,
+  BIRD,
+  BIRD_NORTH,
   BITE_MARK,
   BOAT_SPRITES,
   BOBBER_BITE,
-  FISH_EAST,
-  FISH_WEST,
+  CHIMNEY,
+  FISH_SHAPES,
   HAUL,
+  HOUSE,
   LURE,
   WATER_DOT,
   lineChar,
 } from "@/lib/lake/sprites";
 import { surfaceAt, swayAt } from "@/lib/lake/surface";
-import { ASH, BONE, DIM, glyphAt, shoreOffsetAt } from "@/lib/lake/texture";
+import { smokeAt } from "@/lib/lake/smoke";
+import { ASH, BONE, DIM, glyphAt, shoreOffsetAt, standing } from "@/lib/lake/texture";
 import { project, traceRing, unproject, type Vec } from "@/lib/lake/world";
 import { usePrefersReducedMotion } from "../use-media-query";
 
 export type TouchMode = "move" | "cast";
 
 interface LakeCanvasProps {
-  /** The line came up with something on it: a fish from that shoal, or junk (null) from anywhere else. */
-  onHaul: (shoal: CatchKind | null) => void;
+  /** The line came up with something on it: a fish from that shoal (by number), or junk (null) from anywhere else. */
+  onHaul: (shoal: number | null) => void;
   /** The visitor sailed, cast or clicked the water: whatever is showing can go away. */
   onAction: () => void;
   /** What a tap does on touch screens, which have no right-click or hover. */
@@ -77,9 +91,16 @@ const ROD_STROKES = 3;
  */
 let kept: Snapshot | null = null;
 
+/**
+ * Whether the page is laid out for a wide screen, with the text beside the lake rather than above it:
+ * the same test as the CSS's `lg:` breakpoint. It goes by the window's width, scrollbar and all, which
+ * the canvas's own width leaves out.
+ */
+const isWide = () => window.matchMedia("(min-width: 64rem)").matches;
+
 /** Where the boat rests on screen, as a share of the viewport. The catch card's CSS matches this. */
 function anchorFor(width: number, height: number): Vec {
-  return width >= 1024 ? { x: width * 0.64, y: height * 0.56 } : { x: width * 0.5, y: height * 0.7 };
+  return isWide() ? { x: width * 0.64, y: height * 0.56 } : { x: width * 0.5, y: height * 0.7 };
 }
 
 /**
@@ -123,6 +144,9 @@ export function LakeCanvas(props: LakeCanvasProps) {
     let drift = 0;
     let lastTime = 0;
     let lastPointerType = "mouse";
+    // The birds in the air, if any, and when the next set off, by the lake's clock.
+    let flight: Flight | null = null;
+    let nextFlight = state.time + FIRST_FLIGHT_MIN + Math.random() * (FIRST_FLIGHT_MAX - FIRST_FLIGHT_MIN);
 
     // The lake's texture, kept per square of cells: it never changes, so it is only worked out once.
     // With it, what each cell is and, for water, how far it is from the shore.
@@ -289,8 +313,15 @@ export function LakeCanvas(props: LakeCanvasProps) {
         for (const id of shoal.fish) {
           const fish = fishAt(state, s, id);
           const cell = cellOf(project(fish));
-          const shape = fish.east ? FISH_EAST : FISH_WEST;
-          for (let i = 0; i < shape.length; i++) float(cell.col + i - 1, cell.row, shape[i], DIM);
+          const shape = FISH_SHAPES[fishShape(seed, s, id)];
+          const drawing = fish.east ? shape.east : shape.west;
+          // The middle row, the body, on the fish's row: a bigger fish's fins show above and below it.
+          const middle = Math.floor((drawing.length - 1) / 2);
+          drawing.forEach((line, r) => {
+            for (let i = 0; i < line.length; i++) {
+              if (line[i] !== " ") float(cell.col + i - 1, cell.row + r - middle, line[i], DIM);
+            }
+          });
         }
       });
 
@@ -354,6 +385,26 @@ export function LakeCanvas(props: LakeCanvasProps) {
         }
       }
 
+      // Smoke rises from the house's chimney, at its exact positions so it rises smoothly. Each puff
+      // clears what is behind it, from its first character to its last, so the woods don't show through.
+      if (state.lake) {
+        const top = standing(HOUSE, state.lake.house, cellW, cellH);
+        const chimneyX = (top.col + CHIMNEY.col + 0.5) * cellW - camera.x;
+        const chimneyY = (top.row + CHIMNEY.row + 0.5) * cellH - camera.y;
+        for (const puff of smokeAt(seed, state.time)) {
+          const first = puff.chars.search(/\S/);
+          const last = puff.chars.trimEnd().length - 1;
+          const x = (i: number) => chimneyX + (puff.x + i - (puff.chars.length - 1) / 2) * cellW;
+          const y = chimneyY + puff.y * cellH;
+          if (x(last) < -cellW || x(first) > width + cellW || y < -cellH || y > height + cellH) continue;
+          ctx!.clearRect(x(first) - cellW / 2, y - cellH / 2, (last - first + 1) * cellW, cellH);
+          ctx!.fillStyle = colors[puff.tone];
+          for (let i = first; i <= last; i++) {
+            if (puff.chars[i] !== " ") ctx!.fillText(puff.chars[i], x(i), y);
+          }
+        }
+      }
+
       // The boat sits on top of the water at its exact position, not snapped to a cell. Each row is
       // solid from its first to its last character, so nothing shows through the hull.
       // While a line is out the paddle is stowed, so the rod stands clear of it.
@@ -386,6 +437,40 @@ export function LakeCanvas(props: LakeCanvasProps) {
           ctx!.fillText(char, px, py);
         }
       }
+
+      // Birds fly over everything, at their exact positions, each drawing centred on the bird's body.
+      const birds = flight ? birdsAt(flight, state.time) : null;
+      if (birds) {
+        ctx!.fillStyle = colors[ASH];
+        for (const bird of birds) {
+          const drawing = (bird.north ? BIRD_NORTH : BIRD)[bird.wings];
+          drawing.forEach((line, r) => {
+            for (let c = 0; c < line.length; c++) {
+              if (line[c] === " ") continue;
+              const x = bird.x - camera.x + (c - (line.length - 1) / 2) * cellW;
+              const y = bird.y - camera.y + (r - (drawing.length - 1) / 2) * cellH;
+              ctx!.fillText(line[c], x, y);
+            }
+          });
+        }
+      }
+    }
+
+    /** Sends birds over now and then, while the lake is moving; with reduced motion, never. Returns whether any are up. */
+    function flyBirds(): boolean {
+      if (reducedMotion) return false;
+      // The view as it is now: the camera follows the boat, so it may have moved since the birds set off.
+      const view = { left: camera.x, right: camera.x + width, top: camera.y, bottom: camera.y + height };
+      if (!flight && state.time >= nextFlight) {
+        // Setting off clear of the text beside the lake on wide screens.
+        const clear = isWide() ? width * 0.45 : 0;
+        flight = planFlight({ ...view, left: view.left + clear }, state.time, Math.random);
+      }
+      if (flight && flightOver(flight, state.time, view)) {
+        flight = null;
+        nextFlight = state.time + FLIGHT_GAP_MIN + Math.random() * (FLIGHT_GAP_MAX - FLIGHT_GAP_MIN);
+      }
+      return flight !== null;
     }
 
     function tick(now: number) {
@@ -396,8 +481,9 @@ export function LakeCanvas(props: LakeCanvasProps) {
         if (event === "caught") latest.current.onHaul(state.caughtFrom);
       }
       const cameraMoving = follow(dt);
+      const birdsUp = flyBirds();
       draw();
-      if (isActive(state) || cameraMoving) requestFrame();
+      if (isActive(state) || cameraMoving || birdsUp) requestFrame();
       // Only the water and the fish are moving: a few pictures a second are enough for that.
       else if (!reducedMotion) drift = window.setTimeout(requestFrame, DRIFT_MS);
       else lastTime = 0;

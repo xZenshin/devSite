@@ -1,6 +1,37 @@
 import { describe, expect, it } from "vitest";
 import { PADDLE_FRAMES } from "./game";
-import { ANGLER_SPRITES, BOAT_SPRITES } from "./sprites";
+import { ANGLER_SPRITES, BIRD, BIRD_NORTH, BOAT_SPRITES, FISH_SHAPES } from "./sprites";
+
+describe("the bird's drawings", () => {
+  it("keeps the body in the middle of every drawing, flying either way, so flapping doesn't make it jump", () => {
+    for (const [drawings, body] of [
+      [BIRD, "v"],
+      [BIRD_NORTH, "^"],
+    ] as const) {
+      for (const drawing of drawings) {
+        expect(drawing).toHaveLength(3);
+        for (const row of drawing) expect(row).toHaveLength(5);
+        expect(drawing[1][2]).toBe(body);
+      }
+    }
+  });
+
+  it("flies north upside down: wings raised going south are lowered going north", () => {
+    expect(BIRD_NORTH[0]).toEqual(["     ", " /^\\ ", "/   \\"]);
+    expect(BIRD_NORTH[2]).toEqual(["\\   /", " \\^/ ", "     "]);
+  });
+});
+
+describe("the fish's drawings", () => {
+  it("mirrors each fish's body, its middle row, for swimming the other way", () => {
+    const flip: Record<string, string> = { "<": ">", ">": "<", "(": ")", ")": "(" };
+    for (const { east, west } of FISH_SHAPES) {
+      expect(west).toHaveLength(east.length);
+      const body = (rows: readonly string[]) => rows[Math.floor((rows.length - 1) / 2)];
+      expect([...body(east)].reverse().map((char) => flip[char] ?? char).join("")).toBe(body(west));
+    }
+  });
+});
 
 const WEST = 4;
 

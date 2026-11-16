@@ -1,13 +1,11 @@
-import type { CatchKind } from "../catches";
 import { scatter, type Vec } from "./world";
 
 /**
- * The fish of one kind of catch: dim shapes under the surface that keep to
- * their own grounds. There is one fish for everything of that kind still to be
- * caught, so a shoal thins out as the basket fills.
+ * The fish of one fishing ground: dim shapes under the surface that keep to
+ * their grounds. There is one fish for everything shared out to those grounds
+ * still to be caught, so a shoal thins out as the basket fills.
  */
 export interface Shoal {
-  kind: CatchKind;
   home: Vec;
   /** The fish still swimming, by number. Each number always swims the same course. */
   fish: number[];
@@ -42,6 +40,17 @@ export function wander(seed: number, shoal: number, id: number, home: Vec, time:
     y: home.y + along * Math.sin(v),
     east: -Math.sin(u) * pace > 0,
   };
+}
+
+/** The share of fish that are big ones, with a fin. */
+const BIG_FISH = 0.35;
+
+/**
+ * Which drawing fish number `id` of shoal number `shoal` has: 0 a small fish,
+ * 1 a big one with a fin (see FISH_SHAPES). It always has the same one.
+ */
+export function fishShape(seed: number, shoal: number, id: number): number {
+  return scatter(shoal * 64 + id, 7, seed) < BIG_FISH ? 1 : 0;
 }
 
 /** Makes a shoal as many fish strong as there is left to catch (up to MAX_FISH). */

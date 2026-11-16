@@ -1,4 +1,4 @@
-import { JUNK, type Catch, type CatchKind, type Junk } from "../catches";
+import { JUNK, type Catch, type Junk } from "../catches";
 import { stock, wander, type Shoal, type Swimmer } from "./fish";
 import { BOAT_RADIUS, createLake, inReeds, intoWater, nearestObstruction, type Lake } from "./lake";
 import { clampCast, distance, headingIndex, scatter, type Vec } from "./world";
@@ -100,8 +100,8 @@ export interface GameState {
   shoals: Shoal[];
   /** Seconds the lake has been moving: the fish swim and the water stirs by this clock. */
   time: number;
-  /** Which shoal the last thing reeled in came from; null for junk, from water where no fish was near. */
-  caughtFrom: CatchKind | null;
+  /** Which shoal (by number) the last thing reeled in came from; null for junk, from water where no fish was near. */
+  caughtFrom: number | null;
   /** How long the boat has been unable to move, in seconds. */
   stuck: number;
 }
@@ -113,8 +113,8 @@ export interface StepOptions {
   reducedMotion?: boolean;
 }
 
-/** How many fish each shoal holds: what is left to catch of each kind. */
-export type Stock = Partial<Record<CatchKind, number>>;
+/** How many fish each shoal holds, in the order of the lake's grounds: what is left to catch there. */
+export type Stock = readonly number[];
 
 /**
  * What is kept of a game while the lake is off screen: which lake it was, where
@@ -163,13 +163,13 @@ export function createGame(options: { seed?: number; stock?: Stock; resume?: Sna
     caughtFrom: null,
     stuck: 0,
   };
-  stockShoals(state, options.stock ?? {});
+  stockShoals(state, options.stock ?? []);
   return state;
 }
 
-/** Sets how many fish swim in each shoal: as many as there is left to catch of its kind. */
+/** Sets how many fish swim in each shoal: as many as there is left to catch at its grounds. */
 export function stockShoals(state: GameState, left: Stock): void {
-  for (const shoal of state.shoals) stock(shoal, left[shoal.kind] ?? 0);
+  state.shoals.forEach((shoal, i) => stock(shoal, left[i] ?? 0));
 }
 
 /**
@@ -307,7 +307,7 @@ export function step(state: GameState, dt: number, options: StepOptions = {}): G
       const hooked = line.fish;
       const shoal = hooked ? state.shoals[hooked.shoal] : null;
       if (shoal && hooked) shoal.fish = shoal.fish.filter((id) => id !== hooked.id);
-      state.caughtFrom = shoal?.kind ?? null;
+      state.caughtFrom = shoal && hooked ? hooked.shoal : null;
       state.line = null;
       if (!still) addRipple(state, state.boat, 60, 1);
       events.push("caught");
@@ -364,25 +364,54 @@ export function smooth(f: number): number {
 export type Haul = { type: "catch"; item: Catch } | { type: "junk"; item: Junk; fishedOut: boolean };
 
 /**
- * Decides what comes up. A lure taken by a fish brings up something of that
- * shoal's kind that hasn't been caught yet. Anywhere else (`shoal` null) it is
- * junk, never the same piece twice running (`lastJunk` is the id of the last).
- * Junk says whether the lake is fished out: whether there is nothing left to
- * catch, so fishing near the fish would bring up nothing better.
+ * Decides what comes up. A lure taken by a fish brings up something not caught
+ * yet from what was shared out to its grounds (`pool`). Anywhere else (`pool`
+ * null) it is junk, never the same piece twice running (`lastJunk` is the id of
+ * the last). Junk says whether the lake is fished out: whether there is nothing
+ * left to catch, so fishing near the fish would bring up nothing better.
  */
 export function pickHaul(
   catches: readonly Catch[],
   caught: ReadonlySet<string>,
-  shoal: CatchKind | null,
+  pool: readonly Catch[] | null,
   rng: () => number,
   lastJunk: string | null = null,
 ): Haul {
   const remaining = catches.filter((item) => !caught.has(item.id));
   const oneOf = <T>(items: readonly T[]): T => items[Math.min(items.length - 1, Math.floor(rng() * items.length))];
-  const ofKind = remaining.filter((item) => item.kind === shoal);
-  if (ofKind.length > 0) return { type: "catch", item: oneOf(ofKind) };
+  const fromPool = (pool ?? []).filter((item) => !caught.has(item.id));
+  if (fromPool.length > 0) return { type: "catch", item: oneOf(fromPool) };
   const other = JUNK.filter((junk) => junk.id !== lastJunk);
   return { type: "junk", item: oneOf(other.length > 0 ? other : JUNK), fishedOut: remaining.length === 0 };
+}
+
+/**
+ * Shares the catches out between `grounds` fishing grounds, so each has about
+ * as many: in order, in unbroken runs, as evenly as they divide. Of the evenest
+ * ways to cut the runs, the one that splits the fewest kinds apart, so projects
+ * stay together and jobs and degrees stay together where they can. Everything
+ * is shared out, caught or not, so what belongs where never changes.
+ */
+export function shareOut<T extends { kind: string }>(items: readonly T[], grounds: number): T[][] {
+  const n = items.length;
+  const best = { cuts: [] as number[], spread: Infinity, splits: Infinity };
+  const consider = (cuts: number[]) => {
+    const edges = [0, ...cuts, n];
+    const sizes = edges.slice(1).map((edge, i) => edge - edges[i]);
+    const spread = Math.max(...sizes) - Math.min(...sizes);
+    const splits = cuts.filter((cut) => cut > 0 && cut < n && items[cut - 1].kind === items[cut].kind).length;
+    if (spread < best.spread || (spread === best.spread && splits < best.splits)) {
+      Object.assign(best, { cuts, spread, splits });
+    }
+  };
+  // Every way to cut the list into `grounds` runs, each cut at or after the one before.
+  const cut = (from: number, left: number, cuts: number[]) => {
+    if (left === 0) return consider(cuts);
+    for (let at = from; at <= n; at++) cut(at, left - 1, [...cuts, at]);
+  };
+  cut(0, Math.max(0, grounds - 1), []);
+  const edges = [0, ...best.cuts, n];
+  return edges.slice(1).map((edge, i) => items.slice(edges[i], edge));
 }
 
 function sail(state: GameState, dt: number, still: boolean): void {
