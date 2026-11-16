@@ -68,14 +68,15 @@ education out of it instead of reading a list.
   flag. The first is in sight of the jetty; the others take some paddling to find.
 - Cast: move the pointer to where the lure should land and press Q. The lure only reaches a
   limited distance from the boat, so sail closer to fish further away.
-- Wait: a lure that lands near a fish is taken within a second or two, and brings up something
-  from that fishing ground. Anywhere else the wait is a few seconds longer and the catch can
-  be anything. It is reeled in by itself. Sending the boat somewhere else while the line is
-  out brings the line back empty.
+- Wait: a lure that lands close to a fish is taken within a second or two, and brings up
+  something from that fishing ground. The line is reeled in by itself. Sending the boat
+  somewhere else while the line is out brings the line back empty.
+- Junk: a lure that lands away from the fish waits a few seconds longer and brings up junk,
+  such as an old boot or a rusty can, with a reminder to fish near the fishing spots. Junk is
+  not kept.
 - Catch: a card shows what was caught, with a link to its page, and the catch goes into the
   basket in the top right corner. The basket is remembered between visits, and "release all"
   empties it.
-- Junk: now and then the line brings up junk instead, such as an old boot. Junk is not kept.
 - Phones and tablets: there is no right-click or Q. The "move" and "cast" buttons at the
   bottom of the screen choose what a tap on the water does.
 - No fishing: the "skip fishing" button on the home page opens the projects page, which

@@ -16,7 +16,7 @@ export interface Catch {
   href: string;
 }
 
-/** Reeled in now and then instead of a catch. Never kept in the basket. */
+/** Reeled in from water where no fish is near, instead of a catch. Never kept in the basket. */
 export interface Junk {
   id: string;
   title: string;
@@ -25,7 +25,7 @@ export interface Junk {
 
 export const JUNK: readonly Junk[] = [
   { id: "boot", title: "An old boot", quip: "Size 44. No project inside." },
-  { id: "can", title: "A tin can", quip: "Empty. Not even a README." },
+  { id: "can", title: "An old rusty can", quip: "Who threw that in there?" },
   { id: "duck", title: "A rubber duck", quip: "Good for debugging. Not much of a catch." },
   { id: "note", title: "A soggy sticky note", quip: "It says TODO. That's all it says." },
   { id: "weed", title: "A clump of lake weed", quip: "Tangled, undocumented, and nobody's project." },

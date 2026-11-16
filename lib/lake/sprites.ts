@@ -83,6 +83,13 @@ const PADDLER = [
 `),
 ];
 
+/** The paddler with the paddle stowed, fishing. The rod is drawn on its own; see cast.ts. */
+const ANGLER = art(String.raw`
+
+          O,
+         / )
+`);
+
 /** The hull from the side, with a gap where the paddler sits: level, bow up, and bow down. */
 const HULL_WEST = art(String.raw`
 
@@ -140,25 +147,19 @@ const PADDLE_LEFT = art(String.raw`
 /** Seen from behind or in front the paddle dips to one side, then the other. */
 const PADDLE_ACROSS = [PADDLE_LEVEL, PADDLE_LEFT, PADDLE_LEVEL, mirror(PADDLE_LEFT)];
 
-const fromTheSide = (hull: string[]) => PADDLER.map((paddler) => stack(hull, paddler));
+/** Each set of drawings below: one per position of the paddle, then the paddler fishing. */
+const fromTheSide = (hull: string[]) => [...PADDLER, ANGLER].map((paddler) => stack(hull, paddler));
 const fromAbove = (hull: string[]) => {
   // The paddle goes on whichever row of the hull the paddler's head is drawn on.
   const seat = hull.findIndex((row) => row.includes("O"));
-  return PADDLE_ACROSS.map((paddle) => stack(hull, paddle, seat - 1));
+  return [...PADDLE_ACROSS.map((paddle) => stack(hull, paddle, seat - 1)), hull];
 };
 
 const WEST = fromTheSide(HULL_WEST);
 const NORTH_WEST = fromTheSide(HULL_NORTH_WEST);
 const SOUTH_WEST = fromTheSide(HULL_SOUTH_WEST);
 
-/**
- * The boat: a man in a kayak. One set of drawings per heading (0 east, then
- * clockwise in eighths, as headingIndex returns them), and in each set one
- * drawing per position of the paddle (as paddleFrame returns them; 0 is the
- * paddle at rest). They are all the same size and drawn centred on the boat,
- * so neither turning nor paddling makes it jump.
- */
-export const BOAT_SPRITES: readonly (readonly (readonly string[])[])[] = standTogether([
+const DRAWINGS = standTogether([
   WEST.map(mirror), // east
   SOUTH_WEST.map(mirror), // south-east
   fromAbove(HULL_SOUTH), // south
@@ -170,12 +171,26 @@ export const BOAT_SPRITES: readonly (readonly (readonly string[])[])[] = standTo
 ]);
 
 /**
+ * The boat: a man in a kayak. One set of drawings per heading (0 east, then
+ * clockwise in eighths, as headingIndex returns them), and in each set one
+ * drawing per position of the paddle (as paddleFrame returns them; 0 is the
+ * paddle at rest). They are all the same size and drawn centred on the boat,
+ * so neither turning nor paddling makes it jump.
+ */
+export const BOAT_SPRITES: readonly (readonly (readonly string[])[])[] = DRAWINGS.map((set) =>
+  set.slice(0, PADDLER.length),
+);
+
+/** The boat while a line is out, one drawing per heading: the paddle stowed, so the rod stands clear. */
+export const ANGLER_SPRITES: readonly (readonly string[])[] = DRAWINGS.map((set) => set[PADDLER.length]);
+
+/**
  * The lighthouse on the far shore, seen from the side like the kayak: a banded
  * tower with the lamp near the top. Its foot is the middle of the bottom row.
  *
  * The tower is cropped from the lighthouse piece at https://ascii.rest/lighthouse/
  * (https://github.com/bas3line/ascii, src/pieces/lighthouse.ts), without its sky,
- * sea, rocks or beam.
+ * sea, rocks or beam. Copyright (c) 2026 bas3line, MIT License.
  */
 export const LIGHTHOUSE: readonly string[] = [
   "      +      ",

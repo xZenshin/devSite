@@ -5,7 +5,8 @@ import type { Haul } from "@/lib/lake/game";
 
 /**
  * What just came up on the line, shown above the boat (its position matches
- * the boat's anchor in lake-canvas.tsx). A catch links to its page; junk gets a quip.
+ * the boat's anchor in lake-canvas.tsx). A catch links to its page. Junk gets a
+ * quip and a pointer to the fishing spots, or, once everything is caught, says so.
  */
 export function CatchCard({ haul, onDismiss }: { haul: Haul; onDismiss: () => void }) {
   const isCatch = haul.type === "catch";
@@ -39,8 +40,12 @@ export function CatchCard({ haul, onDismiss }: { haul: Haul; onDismiss: () => vo
           <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-ash">
             {isCatch ? haul.item.summary : haul.item.quip}
           </p>
-          {!isCatch && haul.fishedOut && (
-            <p className="mt-3 text-sm leading-relaxed text-ash">That was the last of it. The lake is fished out.</p>
+          {!isCatch && (
+            <p className="mt-3 text-sm leading-relaxed text-ash">
+              {haul.fishedOut
+                ? "That was the last of it. The lake is fished out."
+                : "Try fishing near the fishing spots, marked by the buoys."}
+            </p>
           )}
 
           <div className="mt-4 flex items-center gap-4 font-mono text-[13px]">

@@ -23,7 +23,8 @@ export function LakeGame({ catches, children }: { catches: Catch[]; children: Re
   const [touchMode, setTouchMode] = useState<TouchMode>("move");
   // `n` re-keys the card so each haul animates in, even the same junk twice.
   const [card, setCard] = useState<{ haul: Haul; n: number } | null>(null);
-  const history = useRef({ firstCast: true, lastWasJunk: false, hauls: 0 });
+  // The last piece of junk, so the next is a different one, and how many hauls so far.
+  const history = useRef<{ lastJunk: string | null; hauls: number }>({ lastJunk: null, hauls: 0 });
 
   // What is left to catch of each kind: that many fish swim in its shoal.
   const stock = useMemo(() => {
@@ -35,8 +36,11 @@ export function LakeGame({ catches, children }: { catches: Catch[]; children: Re
   }, [catches, caught]);
 
   const onHaul = useCallback((shoal: CatchKind | null) => {
-    const haul = pickHaul(catches, new Set(getBasket()), history.current, Math.random, shoal);
-    history.current = { firstCast: false, lastWasJunk: haul.type === "junk", hauls: history.current.hauls + 1 };
+    const haul = pickHaul(catches, new Set(getBasket()), shoal, Math.random, history.current.lastJunk);
+    history.current = {
+      lastJunk: haul.type === "junk" ? haul.item.id : history.current.lastJunk,
+      hauls: history.current.hauls + 1,
+    };
     if (haul.type === "catch") addToBasket(haul.item.id);
     setCard({ haul, n: history.current.hauls });
   }, [catches]);

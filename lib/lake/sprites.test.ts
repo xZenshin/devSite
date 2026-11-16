@@ -1,11 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { PADDLE_FRAMES } from "./game";
-import { BOAT_SPRITES } from "./sprites";
+import { ANGLER_SPRITES, BOAT_SPRITES } from "./sprites";
 
 const WEST = 4;
 
 describe("the kayak's drawings", () => {
-  const all = BOAT_SPRITES.flat();
+  const all = [...BOAT_SPRITES.flat(), ...ANGLER_SPRITES];
+
+  it("has a drawing of the paddler fishing for each heading, without the paddle", () => {
+    expect(ANGLER_SPRITES).toHaveLength(8);
+    const inked = (drawing: readonly string[]) => drawing.join("").replace(/ /g, "").length;
+    ANGLER_SPRITES.forEach((angler, heading) => {
+      // The same kayak and paddler as when paddling, less the paddle.
+      for (const paddling of BOAT_SPRITES[heading]) expect(inked(angler)).toBeLessThan(inked(paddling));
+    });
+  });
 
   it("has every paddle position for each of the eight headings", () => {
     expect(BOAT_SPRITES).toHaveLength(8);

@@ -7,12 +7,13 @@ import {
   FISH_WAIT_MAX,
   FISH_WAIT_MIN,
   FLY_TIME,
+  JUNK_WAIT_MAX,
+  JUNK_WAIT_MIN,
   LURE_REACH,
   REED_DRAG,
   REEL_TIME,
-  WAIT_MAX,
   WAVE_LIFE,
-  WAIT_MIN,
+  WIND_TIME,
   HULL_CENTRE_Y,
   PADDLE_FRAMES,
   PADDLE_STEP,
@@ -28,6 +29,7 @@ import {
   paddleFrame,
   pickHaul,
   rippleRadius,
+  snapshot,
   step,
   stockShoals,
   type GameEvent,
@@ -357,7 +359,7 @@ describe("fish", () => {
     expect(nearestFish(state, { x: 0, y: 0 })).toBeNull();
   });
 
-  it("bites sooner the nearer the lure lands to a fish, and much sooner than in open water", () => {
+  it("bites sooner the nearer the lure lands to a fish, and leaves a lure out of its reach to junk", () => {
     const lineFor = (offset: number) => {
       const state = createGame({ seed: SEED, stock: one });
       const fish = fishAt(state, 0, 0);
@@ -374,8 +376,8 @@ describe("fish", () => {
     expect(near.wait).toBeGreaterThan(onTheNose.wait + 0.5);
     expect(near.wait).toBeLessThanOrEqual(FISH_WAIT_MAX);
     expect(outOfReach.fish).toBeNull();
-    expect(outOfReach.wait).toBeGreaterThanOrEqual(WAIT_MIN);
-    expect(WAIT_MIN).toBeGreaterThan(FISH_WAIT_MAX);
+    expect(outOfReach.wait).toBeGreaterThanOrEqual(JUNK_WAIT_MIN);
+    expect(JUNK_WAIT_MIN).toBeGreaterThan(FISH_WAIT_MAX);
   });
 
   it("draws the fish to the lure, and takes it out of its shoal when it is reeled in", () => {
@@ -386,7 +388,7 @@ describe("fish", () => {
     cast(state, target, () => 0);
     const wait = state.line!.wait;
 
-    run(state, FLY_TIME + 0.05);
+    run(state, WIND_TIME + FLY_TIME + 0.05);
     expect(state.line?.phase).toBe("waiting");
     expect(distance(fishAt(state, 0, 0), target)).toBeGreaterThan(80);
     expect(run(state, wait)).toEqual(["bite"]);
@@ -397,17 +399,24 @@ describe("fish", () => {
     expect(state.caughtFrom).toBe("project");
   });
 
-  it("says the catch came from open water when no fish took the lure", () => {
+  it("snags junk on a lure that lands away from the fish, from no shoal, leaving the fish be", () => {
     const state = createGame({ seed: SEED, stock: one });
     const fish = fishAt(state, 0, 0);
     state.boat = { x: fish.x, y: fish.y + 150 };
     cast(state, fish, () => 0);
     run(state, 10);
     expect(state.caughtFrom).toBe("project");
+    stockShoals(state, one);
 
-    cast(state, { x: state.boat.x + 100, y: state.boat.y }, () => 0);
+    const now = fishAt(state, 0, 0);
+    state.boat = { x: now.x, y: now.y + 150 };
+    cast(state, { x: now.x + LURE_REACH + 120, y: now.y + 150 }, () => 0);
     expect(state.line?.fish).toBeNull();
-    expect(run(state, 12)).toContain("caught");
+    expect(run(state, WIND_TIME + FLY_TIME + 0.05)).toEqual(["landed"]);
+    expect(run(state, JUNK_WAIT_MIN - 0.1)).toEqual([]);
+    expect(run(state, 0.2)).toEqual(["bite"]);
+    expect(run(state, BITE_TIME + REEL_TIME + 0.1)).toEqual(["caught"]);
+    expect(state.shoals[0].fish).toEqual([0]);
     expect(state.caughtFrom).toBeNull();
   });
 
@@ -467,12 +476,30 @@ describe("casting", () => {
     expect(state.heading).toBe(2);
   });
 
-  it("goes through landing, a bite after the wait, and a catch, in that order", () => {
-    const state = createGame();
-    expect(cast(state, { x: 200, y: 0 }, () => 0.5)).toBe(true);
-    const wait = (WAIT_MIN + WAIT_MAX) / 2;
+  /** A lake with one fish in it, and the boat a little way off the fish. */
+  function besideAFish() {
+    const state = createGame({ seed: 7, stock: { project: 1 } });
+    const fish = fishAt(state, 0, 0);
+    state.boat = { x: fish.x, y: fish.y + 150 };
+    return { state, fish };
+  }
 
-    expect(run(state, FLY_TIME + 0.1)).toEqual(["landed"]);
+  it("swings the rod back before the lure flies", () => {
+    const state = createGame();
+    cast(state, { x: 200, y: 0 }, () => 0);
+    expect(state.line?.phase).toBe("winding");
+    expect(run(state, WIND_TIME - 0.05)).toEqual([]);
+    expect(state.line?.phase).toBe("winding");
+    run(state, 0.1);
+    expect(state.line?.phase).toBe("flying");
+  });
+
+  it("goes through landing, a bite after the wait, and a catch, in that order", () => {
+    const { state, fish } = besideAFish();
+    expect(cast(state, fish, () => 0.5)).toBe(true);
+    const wait = state.line!.wait;
+
+    expect(run(state, WIND_TIME + FLY_TIME + 0.1)).toEqual(["landed"]);
     expect(state.line?.phase).toBe("waiting");
     expect(run(state, wait - 0.3)).toEqual([]);
     expect(run(state, 0.4)).toEqual(["bite"]);
@@ -480,14 +507,14 @@ describe("casting", () => {
     expect(state.line).toBeNull();
   });
 
-  it("waits between the shortest and the longest time, depending on the roll", () => {
+  it("waits for junk between the shortest and the longest time, depending on the roll", () => {
     const quick = createGame();
     cast(quick, { x: 200, y: 0 }, () => 0);
-    expect(quick.line?.wait).toBe(WAIT_MIN);
+    expect(quick.line?.wait).toBe(JUNK_WAIT_MIN);
     const slow = createGame();
     cast(slow, { x: 200, y: 0 }, () => 0.999);
-    expect(slow.line?.wait).toBeGreaterThan(WAIT_MAX - 0.01);
-    expect(slow.line?.wait).toBeLessThan(WAIT_MAX);
+    expect(slow.line?.wait).toBeGreaterThan(JUNK_WAIT_MAX - 0.01);
+    expect(slow.line?.wait).toBeLessThan(JUNK_WAIT_MAX);
   });
 
   it("ignores a second cast while the line is out", () => {
@@ -507,35 +534,41 @@ describe("casting", () => {
   });
 
   it("still lands, bites and catches with reduced motion, without ripples", () => {
-    const state = createGame();
-    cast(state, { x: 200, y: 0 }, () => 0);
-    const events = run(state, WAIT_MIN + BITE_TIME + 0.2, { reducedMotion: true });
+    const { state, fish } = besideAFish();
+    cast(state, fish, () => 0);
+    const events = run(state, FISH_WAIT_MAX + BITE_TIME + 0.2, { reducedMotion: true });
     expect(events).toEqual(["landed", "bite", "caught"]);
     expect(state.ripples).toEqual([]);
+
+    const junk = createGame();
+    cast(junk, { x: 200, y: 0 }, () => 0);
+    expect(run(junk, JUNK_WAIT_MIN + BITE_TIME + 0.2, { reducedMotion: true })).toEqual(["landed", "bite", "caught"]);
   });
 });
 
 describe("lurePosition", () => {
-  it("flies from the boat to the target, off the water only while in the air", () => {
+  it("stays over the boat while the rod swings back, then flies out to the target", () => {
     const state = createGame();
     expect(lurePosition(state)).toBeNull();
     cast(state, { x: 200, y: 0 }, () => 0);
-    run(state, FLY_TIME / 2);
+    run(state, WIND_TIME / 2);
+    expect(lurePosition(state)).toEqual({ x: 0, y: 0 });
+
+    run(state, WIND_TIME / 2 + FLY_TIME / 2);
     const flying = lurePosition(state)!;
-    expect(flying.at.x).toBeGreaterThan(50);
-    expect(flying.at.x).toBeLessThan(150);
-    expect(flying.lift).toBeGreaterThan(30);
+    expect(flying.x).toBeGreaterThan(50);
+    expect(flying.x).toBeLessThan(150);
 
     run(state, FLY_TIME);
-    expect(lurePosition(state)).toEqual({ at: { x: 200, y: 0 }, lift: 0 });
+    expect(lurePosition(state)).toEqual({ x: 200, y: 0 });
   });
 
   it("comes back to the boat while reeling", () => {
     const state = createGame();
     cast(state, { x: 200, y: 0 }, () => 0);
-    run(state, FLY_TIME + WAIT_MIN + BITE_TIME + REEL_TIME * 0.9);
+    run(state, WIND_TIME + FLY_TIME + JUNK_WAIT_MIN + BITE_TIME + REEL_TIME * 0.9);
     expect(state.line?.phase).toBe("reeling");
-    expect(lurePosition(state)!.at.x).toBeLessThan(30);
+    expect(lurePosition(state)!.x).toBeLessThan(30);
   });
 });
 
@@ -551,66 +584,79 @@ describe("rippleRadius", () => {
 });
 
 describe("pickHaul", () => {
-  const catches: Catch[] = ["a", "b", "c"].map((id) => ({ id, kind: "project", title: id, href: `/${id}` }));
-  const fresh = { firstCast: true, lastWasJunk: false };
-  const later = { firstCast: false, lastWasJunk: false };
-
-  /** A generator that returns the given numbers in turn. */
-  const rolls = (...values: number[]) => {
-    let i = 0;
-    return () => values[i++ % values.length];
-  };
-
-  it("only picks what hasn't been caught", () => {
-    for (const roll of [0, 0.3, 0.6, 0.999]) {
-      const haul = pickHaul(catches, new Set(["a", "c"]), later, rolls(0.9, roll));
-      expect(haul).toEqual({ type: "catch", item: catches[1] });
-    }
-  });
-
-  it("can reach every remaining catch", () => {
-    const seen = new Set<string>();
-    for (let i = 0; i < 30; i++) {
-      const haul = pickHaul(catches, new Set(), fresh, rolls(i / 30));
-      if (haul.type === "catch") seen.add(haul.item.id);
-    }
-    expect(seen).toEqual(new Set(["a", "b", "c"]));
-  });
-
-  it("sometimes brings up junk, which says the lake isn't empty yet", () => {
-    const haul = pickHaul(catches, new Set(), later, rolls(0.1, 0));
-    expect(haul).toEqual({ type: "junk", item: JUNK[0], fishedOut: false });
-  });
-
-  it("never brings up junk on the first cast or twice running", () => {
-    expect(pickHaul(catches, new Set(), fresh, rolls(0)).type).toBe("catch");
-    expect(pickHaul(catches, new Set(), { firstCast: false, lastWasJunk: true }, rolls(0)).type).toBe("catch");
-  });
+  const mixed: Catch[] = [
+    { id: "p1", kind: "project", title: "p1", href: "/p1" },
+    { id: "p2", kind: "project", title: "p2", href: "/p2" },
+    { id: "e1", kind: "education", title: "e1", href: "/e1" },
+  ];
+  const constant = (value: number) => () => value;
 
   it("brings up something of the shoal's kind when a fish took the lure, and never junk", () => {
-    const mixed: Catch[] = [
-      { id: "p1", kind: "project", title: "p1", href: "/p1" },
-      { id: "p2", kind: "project", title: "p2", href: "/p2" },
-      { id: "e1", kind: "education", title: "e1", href: "/e1" },
-    ];
     for (const roll of [0, 0.1, 0.5, 0.999]) {
-      expect(pickHaul(mixed, new Set(), later, rolls(roll), "education")).toEqual({ type: "catch", item: mixed[2] });
-      const haul = pickHaul(mixed, new Set(["p1"]), later, rolls(roll), "project");
-      expect(haul).toEqual({ type: "catch", item: mixed[1] });
+      expect(pickHaul(mixed, new Set(), "education", constant(roll))).toEqual({ type: "catch", item: mixed[2] });
+      expect(pickHaul(mixed, new Set(["p1"]), "project", constant(roll))).toEqual({ type: "catch", item: mixed[1] });
     }
   });
 
-  it("treats a shoal with nothing left like open water", () => {
-    const mixed: Catch[] = [
-      { id: "p1", kind: "project", title: "p1", href: "/p1" },
-      { id: "e1", kind: "education", title: "e1", href: "/e1" },
-    ];
-    const haul = pickHaul(mixed, new Set(["e1"]), fresh, rolls(0), "education");
-    expect(haul).toEqual({ type: "catch", item: mixed[0] });
+  it("can reach everything of the shoal's kind not caught yet", () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 30; i++) {
+      const haul = pickHaul(mixed, new Set(), "project", constant(i / 30));
+      if (haul.type === "catch") seen.add(haul.item.id);
+    }
+    expect(seen).toEqual(new Set(["p1", "p2"]));
   });
 
-  it("gives only junk once everything is caught", () => {
-    const haul = pickHaul(catches, new Set(["a", "b", "c"]), fresh, rolls(0.999));
+  it("brings up only junk away from the fish, which says the lake isn't fished out yet", () => {
+    for (const roll of [0, 0.5, 0.999]) {
+      const haul = pickHaul(mixed, new Set(), null, constant(roll));
+      expect(haul).toMatchObject({ type: "junk", fishedOut: false });
+    }
+    expect(pickHaul(mixed, new Set(), null, constant(0))).toEqual({ type: "junk", item: JUNK[0], fishedOut: false });
+  });
+
+  it("can reach every piece of junk, but never the same one twice running", () => {
+    const seen = new Set<string>();
+    for (let i = 0; i < 40; i++) {
+      const haul = pickHaul(mixed, new Set(), null, constant(i / 40), "can");
+      if (haul.type === "junk") seen.add(haul.item.id);
+    }
+    expect(seen).toEqual(new Set(JUNK.filter((junk) => junk.id !== "can").map((junk) => junk.id)));
+  });
+
+  it("brings up junk from a shoal with nothing left in it", () => {
+    const haul = pickHaul(mixed, new Set(["e1"]), "education", constant(0));
+    expect(haul).toMatchObject({ type: "junk", fishedOut: false });
+  });
+
+  it("says the lake is fished out once everything is caught", () => {
+    const haul = pickHaul(mixed, new Set(["p1", "p2", "e1"]), null, constant(0.999));
     expect(haul).toEqual({ type: "junk", item: JUNK.at(-1), fishedOut: true });
+  });
+});
+
+describe("resuming", () => {
+  it("comes back to the same lake, the boat lying where it was and facing the same way", () => {
+    const state = createGame({ seed: 11, stock: { project: 2 } });
+    moveTo(state, { x: 300, y: 120 });
+    run(state, 0.6);
+    cast(state, { x: 500, y: 200 }, () => 0);
+    run(state, 0.3);
+    const kept = snapshot(state)!;
+
+    const again = createGame({ seed: 999, stock: { project: 2 }, resume: kept });
+    expect(again.lake).toEqual(state.lake);
+    expect(again.boat).toEqual(state.boat);
+    expect(again.heading).toBe(state.heading);
+    expect(again.time).toBe(state.time);
+    // The fish swim by the lake's clock, so they are where they were too.
+    expect(fishAt(again, 0, 1)).toEqual(fishAt(state, 0, 1));
+    // The boat lies still, its line in.
+    expect(again.dest).toBeNull();
+    expect(again.line).toBeNull();
+  });
+
+  it("keeps nothing of open water without a lake", () => {
+    expect(snapshot(createGame())).toBeNull();
   });
 });

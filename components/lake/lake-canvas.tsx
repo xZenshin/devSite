@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { CatchKind } from "@/lib/catches";
+import { bobberUnder, linePath, lureOnScreen, rod, traceLine } from "@/lib/lake/cast";
 import {
   WAVE_LIFE,
   cast,
@@ -9,17 +10,19 @@ import {
   createGame,
   fishAt,
   isActive,
-  lurePosition,
   moveTo,
   paddleFrame,
   rippleRadius,
+  snapshot,
   step,
   stockShoals,
   type GameState,
+  type Snapshot,
   type Stock,
 } from "@/lib/lake/game";
 import {
   AIM,
+  ANGLER_SPRITES,
   BITE_MARK,
   BOAT_SPRITES,
   BOBBER_BITE,
@@ -38,7 +41,7 @@ import { usePrefersReducedMotion } from "../use-media-query";
 export type TouchMode = "move" | "cast";
 
 interface LakeCanvasProps {
-  /** The line came back with something on it: from that shoal, or from open water. */
+  /** The line came up with something on it: a fish from that shoal, or junk (null) from anywhere else. */
   onHaul: (shoal: CatchKind | null) => void;
   /** The visitor sailed, cast or clicked the water: whatever is showing can go away. */
   onAction: () => void;
@@ -64,6 +67,15 @@ const DRIFT_MS = 100;
 /** How far the kayak rises and falls on the water, in pixels, and how fast (radians per second). */
 const BOB = 1;
 const BOB_RATE = 1.4;
+/** How many characters the rod is drawn with. */
+const ROD_STROKES = 3;
+
+/**
+ * The lake and where the boat was, kept while the visitor reads the site's other
+ * pages: coming back to the home page finds the same lake, the boat where it was
+ * left. It lives as long as the page does, so a new visit (or a reload) is a new lake.
+ */
+let kept: Snapshot | null = null;
 
 /** Where the boat rests on screen, as a share of the viewport. The catch card's CSS matches this. */
 function anchorFor(width: number, height: number): Vec {
@@ -93,8 +105,12 @@ export function LakeCanvas(props: LakeCanvasProps) {
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
 
-    // A lake of a new shape on every visit.
-    const state: GameState = createGame({ seed: Math.floor(Math.random() * 2 ** 31), stock: latest.current.stock });
+    // A lake of a new shape on every visit; the same one again on coming back from another page.
+    const state: GameState = createGame({
+      seed: Math.floor(Math.random() * 2 ** 31),
+      stock: latest.current.stock,
+      resume: kept ?? undefined,
+    });
     const camera = { x: 0, y: 0, placed: false };
     const pointer = { x: 0, y: 0, known: false, overWater: false, mouse: false };
     let width = 0;
@@ -302,29 +318,17 @@ export function LakeCanvas(props: LakeCanvasProps) {
       }
 
       const line = state.line;
-      const lure = lurePosition(state);
+      const lure = lureOnScreen(state);
       if (line && lure) {
-        const tip = { x: boat.x, y: boat.y - cellH * 2 };
-        const end = project(lure.at);
-        end.y -= lure.lift;
-        const a = cellOf(tip);
-        const b = cellOf(end);
-        const char = lineChar(end.x - tip.x, end.y - tip.y);
-        // One character per row for a slanted line, per column for a flat one, so it
-        // stays a single thin stroke whatever its angle.
-        const steps = char === "-" ? Math.abs(b.col - a.col) : Math.abs(b.row - a.row);
-        for (let i = 1; i < steps; i++) {
-          const f = i / steps;
-          put(Math.round(a.col + (b.col - a.col) * f), Math.round(a.row + (b.row - a.row) * f), char, ASH);
-        }
+        traceLine(linePath(state, reducedMotion), cellW, cellH, (col, row, char) => put(col, row, char, ASH));
+        const b = cellOf(lure);
         if (line.phase === "reeling") {
           put(b.col - 1, b.row, "[", BONE);
           put(b.col, b.row, HAUL, BONE);
           put(b.col + 1, b.row, "]", BONE);
         } else if (line.phase === "bite") {
           // The bobber ducks under and comes back up a few times.
-          const under = Math.floor(line.t / 0.12) % 2 === 1;
-          put(b.col, b.row, under ? WATER_DOT : BOBBER_BITE, BONE);
+          put(b.col, b.row, bobberUnder(line) ? WATER_DOT : BOBBER_BITE, BONE);
           put(b.col, b.row - 1, BITE_MARK, BONE);
         } else {
           put(b.col, b.row, LURE, BONE);
@@ -352,7 +356,8 @@ export function LakeCanvas(props: LakeCanvasProps) {
 
       // The boat sits on top of the water at its exact position, not snapped to a cell. Each row is
       // solid from its first to its last character, so nothing shows through the hull.
-      const sprite = BOAT_SPRITES[state.heading][paddleFrame(state)];
+      // While a line is out the paddle is stowed, so the rod stands clear of it.
+      const sprite = state.line ? ANGLER_SPRITES[state.heading] : BOAT_SPRITES[state.heading][paddleFrame(state)];
       const bx = boat.x - camera.x;
       // The kayak rides the water, rising and falling a little.
       const by = boat.y - camera.y + Math.sin(state.time * BOB_RATE) * BOB;
@@ -366,6 +371,19 @@ export function LakeCanvas(props: LakeCanvasProps) {
         ctx!.clearRect(x(first) - cellW / 2, y - cellH / 2, (last - first + 1) * cellW, cellH);
         for (let c = first; c <= last; c++) {
           if (sprite[r][c] !== " ") ctx!.fillText(sprite[r][c], x(c), y);
+        }
+      }
+
+      // The rod, while a line is out: drawn over the boat, which it moves with, in short strokes along its
+      // length. Nothing is cleared beneath it, so swung back over the shoulder it passes the head without hiding it.
+      const held = rod(state);
+      if (held) {
+        const char = lineChar(held.tip.x - held.butt.x, held.tip.y - held.butt.y);
+        const dy = by - (boat.y - camera.y);
+        for (let k = 1; k <= ROD_STROKES; k++) {
+          const px = held.butt.x + ((held.tip.x - held.butt.x) * k) / ROD_STROKES - camera.x;
+          const py = held.butt.y + ((held.tip.y - held.butt.y) * k) / ROD_STROKES - camera.y + dy;
+          ctx!.fillText(char, px, py);
         }
       }
     }
@@ -455,7 +473,7 @@ export function LakeCanvas(props: LakeCanvasProps) {
     };
 
     // A single ring around the boat on arrival, so the water reads as water.
-    if (!reducedMotion) state.ripples.push({ x: 0, y: 0, age: -0.6, life: 2.2, maxR: 110 });
+    if (!reducedMotion) state.ripples.push({ ...state.boat, age: -0.6, life: 2.2, maxR: 110 });
     resize();
     // The web font decides the cell width; measure again once it has loaded.
     let cancelled = false;
@@ -466,6 +484,7 @@ export function LakeCanvas(props: LakeCanvasProps) {
     });
 
     return () => {
+      kept = snapshot(state);
       cancelled = true;
       restock.current = null;
       cancelAnimationFrame(frame);

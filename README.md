@@ -48,9 +48,14 @@ Visitors fish the portfolio out of it:
   and degrees each keep to their own fishing ground, marked by a buoy, and a shoal thins out as
   the basket fills. A lure that lands near a fish is taken within a second or two, and brings up
   something of that shoal's kind.
-- Out in open water the wait is longer, and what bites is picked at random from what hasn't
-  been caught yet, or now and then is an old boot. Catches go into a basket that is kept in the
+- Away from the fish the wait is longer, and what snags the lure is junk (an old boot, a rusty
+  can), with a reminder to fish near the buoys. Catches go into a basket that is kept in the
   browser's `localStorage`.
+- Browsing the other pages and coming back finds the same lake, with the boat where it was left.
+  A reload is a new visit and a new lake.
+- **Q** is a cast, not a teleport: the paddler swings the rod back over his shoulder and whips
+  it forward, the lure arcs out with the line paying out behind it, and the slack line falls
+  onto the water when it lands.
 - **Skip fishing** leads to [/projects](app/projects/page.tsx), the same things as a plain list.
 
 The catches are built from the same Markdown as the pages ([lib/catches.ts](lib/catches.ts)),
