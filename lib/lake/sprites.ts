@@ -239,6 +239,27 @@ export const HOUSE: readonly string[] = [
 ];
 /** Where the chimney's top is in the drawing of the house: column, and row. */
 export const CHIMNEY = { col: HOUSE[0].indexOf("[_]") + 1, row: 0 };
+/**
+ * A campsite on the near (south) shore, well up the land: a tent, a pile of
+ * logs, and a campfire ringed with stones, smoke curling up from it. Its foot
+ * is the middle of the bottom row. It stands up the screen like everything
+ * else, towards the lake, so it is placed with its top well clear of the water.
+ *
+ * "Camping" by Joan G. Stark (Spunk), https://www.asciiart.eu/art/a93d8e13010704e4
+ */
+export const CAMP: readonly string[] = [
+  "      ______             ",
+  "     /     /\\            ",
+  "    /     /  \\           ",
+  "   /_____/----\\_    (    ",
+  "  \"     \"          ).    ",
+  " _ ___          o (:') o ",
+  "(@))_))        o ~/~~\\~ o",
+  "                o  o  o  ",
+];
+/** The campfire's flames, `(:')`, in the drawing of the campsite: its first column, and its row. */
+export const CAMPFIRE = { col: CAMP[5].indexOf("(:')"), row: 5 };
+
 /** Where the door is: the first of the two columns of its opening, and the row of its threshold. */
 export const DOOR = { col: HOUSE[HOUSE.length - 1].indexOf("__"), row: HOUSE.length - 1 };
 

@@ -42,8 +42,9 @@ Visitors fish the portfolio out of it:
   far shore. The water is thick with specks in the shallows and nearly empty where it is deep.
   Rocks stand in it, which the boat goes round; reed beds line the shore, which slow it down;
   and lily pads float in the shallows. On the far shore a lighthouse stands west of the jetty,
-  and a house east of it, with a trail along the beach to its door and smoke rising from its
-  chimney, leaning with the wind.
+  and a house east of it, with a paved path up from the jetty to its door and smoke rising from
+  its chimney, leaning with the wind. Beyond the near shore there is a campsite ("Camping" by Joan
+  G. Stark, from [asciiart.eu](https://www.asciiart.eu/art/a93d8e13010704e4)).
 - The water is never quite still: gusts of wind ruffle the surface as they cross it and bend
   the reeds, waves lap at the shore, the light glints here and there, and the kayak bobs.
   Now and then a bird flies over, or two together, up or down the screen.

@@ -51,6 +51,18 @@ const HOUSE_EAST = 280;
 const HOUSE_INLAND = 200;
 const HOUSE_HALF_WIDTH = 145;
 const HOUSE_FOOTING = 110;
+/**
+ * Where the campsite stands, on the near (south) shore: this far east of the
+ * jetty's line, and far enough from the water that the top of its drawing (it
+ * stands up the screen, towards the lake) is at least CAMP_FOOTING up the land.
+ * Half its width and its height are a little over those of its drawing at the
+ * usual font size; the height is in world units, twice its height on screen.
+ */
+const CAMP_EAST = 300;
+const CAMP_HALF_WIDTH = 115;
+const CAMP_HEIGHT = 300;
+const CAMP_FOOTING = 110;
+const SOUTH = Math.PI / 2;
 
 /** How far from the shore the water reaches its full depth. */
 const DEEP_AT = 460;
@@ -83,6 +95,8 @@ export interface Lake {
   lighthouse: Vec;
   /** The foot of the house, up the beach of the far shore, east of the jetty. A trail leads to it from the jetty. */
   house: Vec;
+  /** The foot of the campsite, on the land beyond the near shore, a good way from the water. */
+  camp: Vec;
   /** Rocks standing out of the water. The boat goes round them. */
   rocks: readonly Disc[];
   /** Reed beds along the shore. The boat pushes through them, slowly. */
@@ -238,6 +252,7 @@ export function createLake(seed: number): Lake {
     jetty: { shore: { x: 0, y: shoreY - JETTY_ASHORE }, end: { x: 0, y: JETTY_END_Y } },
     lighthouse: { x: 0, y: 0 },
     house: { x: 0, y: 0 },
+    camp: { x: 0, y: 0 },
     rocks: [],
     reeds: [],
     lilies: [],
@@ -317,11 +332,38 @@ export function createLake(seed: number): Lake {
     ...lake,
     lighthouse: placeAshore(lake, -LIGHTHOUSE_WEST, LIGHTHOUSE_HALF_WIDTH, LIGHTHOUSE_FOOTING),
     house: upTheLand(lake, { x: HOUSE_EAST, y: lake.jetty.shore.y - HOUSE_INLAND }, HOUSE_HALF_WIDTH, HOUSE_FOOTING),
+    camp: placeSouth(lake, CAMP_EAST, CAMP_HALF_WIDTH, CAMP_HEIGHT, CAMP_FOOTING),
     grounds,
     rocks,
     reeds,
     lilies,
   };
+}
+
+/**
+ * Where something stands on the land beyond the near (south) shore: round from
+ * due south, east for a positive `x` and west for a negative one, until the
+ * shore is that far along; then far enough south, away from the water, that
+ * the top edge of something `height` tall and `halfWidth` either side of the
+ * middle is at least `footing` from the water. It stands up the screen, towards
+ * the lake, so its top is what comes nearest the water.
+ */
+function placeSouth(lake: Lake, x: number, halfWidth: number, height: number, footing: number): Vec {
+  const along = (angle: number, out: number): Vec => ({
+    x: lake.centre.x + Math.cos(angle) * out,
+    y: lake.centre.y + Math.sin(angle) * out,
+  });
+  const way = Math.sign(x);
+  let angle = SOUTH;
+  while (Math.abs(angle - SOUTH) < Math.PI / 2 && along(angle, shoreRadius(lake, angle)).x * way < Math.abs(x)) {
+    angle -= way * 0.01;
+  }
+  for (let inset = 0; ; inset += 4) {
+    const foot = along(angle, shoreRadius(lake, angle) + inset);
+    // Its top edge: both corners, and the middle, in case the shore bulges between them.
+    const edge = [-halfWidth, 0, halfWidth].map((dx) => ({ x: foot.x + dx, y: foot.y - height }));
+    if (inset > 1000 || edge.every((point) => shoreDistance(lake, point) < -footing)) return foot;
+  }
 }
 
 /**

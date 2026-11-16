@@ -106,6 +106,19 @@ describe("createLake", () => {
     }
   });
 
+  it("puts the campsite on the land beyond the near shore, its top well clear of the water", () => {
+    for (const seed of SEEDS) {
+      const lake = createLake(seed);
+      // South of the lake, and east of the jetty's line, in the open part of a wide screen.
+      expect(lake.camp.y).toBeGreaterThan(lake.centre.y + 1000);
+      expect(lake.camp.x).toBeGreaterThan(150);
+      // It stands up the screen towards the lake, so its top edge comes nearest the water.
+      for (const dx of [-115, 0, 115]) {
+        expect(shoreDistance(lake, { x: lake.camp.x + dx, y: lake.camp.y - 300 })).toBeLessThan(-109);
+      }
+    }
+  });
+
   it("has its fishing grounds out in the water and well apart, the first in sight of the jetty", () => {
     for (const seed of SEEDS) {
       const lake = createLake(seed);

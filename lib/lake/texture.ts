@@ -8,7 +8,7 @@ import {
   shoreDistance,
   type Lake,
 } from "./lake";
-import { CHIMNEY, DOOR, HOUSE, LAMP, LIGHTHOUSE, WATER_DOT } from "./sprites";
+import { CAMP, CAMPFIRE, CHIMNEY, DOOR, HOUSE, LAMP, LIGHTHOUSE, WATER_DOT } from "./sprites";
 import { cellCentre, hasDot, patchiness, project, scatter, type Vec } from "./world";
 
 /**
@@ -138,6 +138,21 @@ function houseAt(lake: Lake, col: number, row: number, cellW: number, cellH: num
   return { char, tone: window ? BONE : char === "X" ? DIM : ASH, solid: true };
 }
 
+/**
+ * The campsite's part of a cell. The fire burns bright; the smoke above it, the
+ * stones round it and its embers are dim; the tent and the logs are ash.
+ */
+function campAt(lake: Lake, col: number, row: number, cellW: number, cellH: number): Glyph | null {
+  const char = partOf(CAMP, lake.camp, col, row, cellW, cellH);
+  if (char === null) return null;
+  if (char === " ") return SAND;
+  const top = standing(CAMP, lake.camp, cellW, cellH);
+  const [r, c] = [row - top.row, col - top.col];
+  const fire = r === CAMPFIRE.row && c >= CAMPFIRE.col && c < CAMPFIRE.col + 4;
+  const smoke = r < CAMPFIRE.row && c >= CAMPFIRE.col;
+  return { char, tone: fire ? BONE : smoke || char === "o" || char === "~" ? DIM : ASH, solid: true };
+}
+
 /** The path's cells, worked out once per lake and size of cell. */
 const paths = new WeakMap<Lake, { cellW: number; cellH: number; cells: ReadonlyMap<string, Glyph> }>();
 
@@ -242,6 +257,8 @@ export function glyphAt(lake: Lake | null, col: number, row: number, cellW: numb
   if (tower) return tower;
   const house = houseAt(lake, col, row, cellW, cellH);
   if (house) return house;
+  const camp = campAt(lake, col, row, cellW, cellH);
+  if (camp) return camp;
 
   const buoy = buoyAt(lake, col, row, cellW, cellH);
   if (buoy) return { char: buoy, tone: buoy === "P" ? BONE : ASH, solid: true };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createLake, onJetty, shoreRadius, type Lake } from "./lake";
-import { DOOR, HOUSE } from "./sprites";
+import { createLake, onJetty, shoreDistance, shoreRadius, type Lake } from "./lake";
+import { CAMP, CAMPFIRE, DOOR, HOUSE } from "./sprites";
 import { ASH, BONE, DIM, glyphAt, pathCells, standing } from "./texture";
 import { cellCentre, hasDot, project } from "./world";
 
@@ -102,6 +102,26 @@ describe("glyphAt", () => {
           if (r > 0 && "[]".includes(line[c])) expect(glyph?.tone).toBe(BONE);
         }
       });
+    }
+  });
+
+  it("draws the campsite on the land, the fire bright and its smoke dim, all of it clear of the water", () => {
+    for (const seed of SEEDS) {
+      const lake = createLake(seed);
+      const top = standing(CAMP, lake.camp, CELL_W, CELL_H);
+      CAMP.forEach((line, r) => {
+        for (let c = 0; c < line.length; c++) {
+          if (line[c] === " ") continue;
+          expect(glyphAt(lake, top.col + c, top.row + r, CELL_W, CELL_H)).toMatchObject({ char: line[c], solid: true });
+          // Even its top row is a few rows up the land.
+          expect(shoreDistance(lake, cellCentre(top.col + c, top.row + r, CELL_W, CELL_H))).toBeLessThan(-60);
+        }
+      });
+      const fire = glyphAt(lake, top.col + CAMPFIRE.col + 1, top.row + CAMPFIRE.row, CELL_W, CELL_H);
+      expect(fire).toMatchObject({ char: ":", tone: BONE });
+      // The smoke's `)` is right above the fire's `:`.
+      const smoke = glyphAt(lake, top.col + CAMPFIRE.col + 1, top.row + CAMPFIRE.row - 1, CELL_W, CELL_H);
+      expect(smoke).toMatchObject({ char: ")", tone: DIM });
     }
   });
 
