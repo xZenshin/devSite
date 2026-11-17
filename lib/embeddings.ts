@@ -13,7 +13,7 @@ const responseSchema = z.object({
  * Voyage embeds questions and documents differently ("query" vs "document"),
  * which improves retrieval over embedding both the same way.
  */
-export type InputType = "query" | "document";
+type InputType = "query" | "document";
 
 export async function embed(texts: string[], inputType: InputType): Promise<number[][]> {
   const embeddings: number[][] = [];

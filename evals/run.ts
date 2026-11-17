@@ -16,11 +16,10 @@ import { mkdir, writeFile, appendFile } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { POST } from "../app/api/chat/route";
-import type { ChatMetadata } from "../lib/answer";
 import { MODEL, type RetrievalMode } from "../lib/config";
 import { loadContent } from "../lib/content";
 import { costUsd } from "../lib/cost";
-import { readUIMessageChunks } from "../lib/ui-stream";
+import { collectAnswer, questionRequest, type CollectedAnswer } from "../lib/ui-stream";
 import { loadCases, type EvalCase } from "./cases";
 import { formatSiteContent, judge, JUDGE_MODEL } from "./judge";
 import { formatFailures, formatSummaryTable, summarize, type RunRow, type Summary } from "./report";
@@ -40,13 +39,6 @@ const { values: args } = parseArgs({
     "min-pass": { type: "string" },
   },
 });
-
-interface Collected {
-  text: string;
-  cited: { n: number; url: string }[];
-  metadata?: ChatMetadata;
-  errorText?: string;
-}
 
 interface Context {
   /** Undefined when running against a remote --url, where the server picks the mode. */
@@ -120,8 +112,8 @@ async function runTask(evalCase: EvalCase, rep: number, context: Context): Promi
   }
 
   const { result, attempts } = asked;
-  const metadata = result.metadata!;
-  const cited = result.cited.map((c) => ({ ...c, file: fileForUrl(c.url, context.pageFiles) }));
+  const metadata = result.diagnostics!;
+  const cited = result.cited.map(({ n, url }) => ({ n, url, file: fileForUrl(url, context.pageFiles) }));
   const row: RunRow = { ...base, status: "ok", attempts, answer: result.text, cited, metadata };
 
   // A clipped answer is recorded but not scored as wrong.
@@ -163,15 +155,16 @@ async function runTask(evalCase: EvalCase, rep: number, context: Context): Promi
 async function askWithRetries(
   question: string,
   mode: RetrievalMode | undefined,
-): Promise<{ result: Collected; attempts: number } | { error: string; attempts: number }> {
+): Promise<{ result: CollectedAnswer; attempts: number } | { error: string; attempts: number }> {
   for (let attempt = 1; ; attempt++) {
     try {
       const result = await withTimeout(ask(question), CASE_TIMEOUT_MS);
       if (result.errorText) throw new Error(`stream error: ${result.errorText}`);
-      if (!result.metadata) throw new Error("stream ended without metadata");
-      if (result.metadata.model !== MODEL) throw new Error(`served by ${result.metadata.model}, expected ${MODEL}`);
-      if (mode && result.metadata.mode !== mode) {
-        throw new Error(`ran in ${result.metadata.mode} mode, expected ${mode}`);
+      // A deployment only sends diagnostics to requests carrying its EVAL_TOKEN.
+      if (!result.diagnostics) throw new Error("stream ended without diagnostics (is EVAL_TOKEN set?)");
+      if (result.diagnostics.model !== MODEL) throw new Error(`served by ${result.diagnostics.model}, expected ${MODEL}`);
+      if (mode && result.diagnostics.mode !== mode) {
+        throw new Error(`ran in ${result.diagnostics.mode} mode, expected ${mode}`);
       }
       return { result, attempts: attempt };
     } catch (error) {
@@ -181,23 +174,11 @@ async function askWithRetries(
   }
 }
 
-async function ask(question: string): Promise<Collected> {
-  const init = {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ messages: [{ id: "1", role: "user", parts: [{ type: "text", text: question }] }] }),
-  };
+async function ask(question: string): Promise<CollectedAnswer> {
+  const init = questionRequest(question);
   const response = args.url ? await fetch(args.url, init) : await POST(new Request("http://localhost/api/chat", init));
   if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-
-  const collected: Collected = { text: "", cited: [] };
-  for await (const chunk of readUIMessageChunks(response.body)) {
-    if (chunk.type === "text-delta") collected.text += chunk.delta;
-    else if (chunk.type === "source-url") collected.cited.push({ n: Number(chunk.sourceId), url: chunk.url });
-    else if (chunk.type === "error") collected.errorText = chunk.errorText;
-    else if (chunk.type === "finish") collected.metadata = chunk.messageMetadata as ChatMetadata;
-  }
-  return collected;
+  return collectAnswer(response.body);
 }
 
 async function saveResults(label: string, results: object): Promise<void> {

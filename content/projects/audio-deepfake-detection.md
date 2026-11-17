@@ -6,9 +6,9 @@ featured: false
 order: 2
 ---
 
-## Problem
+## Summary
 
-Generative models can now produce speech that most people cannot tell apart from real recordings, which makes audio deepfakes easy to use for fraud and other crimes. The thesis set out to build machine learning models that detect deepfake audio, and to test whether a detector trained on one dataset still works on deepfakes from other sources, which is what deployment in the real world requires.
+A master's thesis in Computer Science at the IT University of Copenhagen on detecting deepfake speech. The thesis fine-tunes two Transformer models, the Audio Spectrogram Transformer (AST) and a Vision Transformer (ViT), to classify spectrograms of audio as real or fake. It then tests whether a detector trained on one dataset still works on deepfakes from other sources, which real-world use requires. Generated speech is now hard to tell apart from real recordings, which makes audio deepfakes easy to use for fraud and other crimes.
 
 ## Stack
 
@@ -23,7 +23,7 @@ Generative models can now produce speech that most people cannot tell apart from
 
 ## My role
 
-Two-person master's thesis for Computer Science. 
+Two-person master's thesis for Computer Science, however we worked together on everything, no person has complete ownership over the features:
 - spectrogram preprocessing and dataset loaders for three datasets
 - fine-tuning both models: the AST had its first 10 layers frozen and its position embeddings interpolated for longer inputs, and the ViT had only its last blocks and classifier head trained
 - cross-dataset benchmarking with EER

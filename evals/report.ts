@@ -1,4 +1,4 @@
-import type { ChatMetadata } from "../lib/answer";
+import type { ChatDiagnostics } from "../lib/answer";
 import type { CaseScore, JudgeVerdict } from "./score";
 
 /** One (case, rep) attempt. Errors carry no score and are left out of every metric. */
@@ -12,7 +12,7 @@ export interface RunRow {
   question: string;
   answer?: string;
   cited?: { n: number; url: string; file?: string }[];
-  metadata?: ChatMetadata;
+  metadata?: ChatDiagnostics;
   judgeExplanation?: string;
   /** Raw judge output, so scoring changes can be re-applied without re-running. */
   verdict?: JudgeVerdict;
@@ -45,7 +45,7 @@ export interface Summary {
 }
 
 export function summarize(mode: string, rows: RunRow[]): Summary {
-  const scored = rows.filter((r): r is RunRow & { score: CaseScore; metadata: ChatMetadata } =>
+  const scored = rows.filter((r): r is RunRow & { score: CaseScore; metadata: ChatDiagnostics } =>
     Boolean(r.status === "ok" && r.score && r.metadata),
   );
   const answerable = scored.filter((r) => r.type === "answerable").map((r) => r.score);
@@ -81,7 +81,7 @@ export function summarize(mode: string, rows: RunRow[]): Summary {
   };
 }
 
-/** A Markdown table with one column per mode, for the terminal, CI summaries and the README. */
+/** A Markdown table with one column per mode, for the terminal, CI summaries and TECHNICAL.md. */
 export function formatSummaryTable(summaries: Summary[]): string {
   const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
   const ms = (v: number) => `${Math.round(v)} ms`;
@@ -134,7 +134,7 @@ function mean(values: number[]): number {
   return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
 }
 
-export function percentile(values: number[], p: number): number {
+function percentile(values: number[], p: number): number {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1)];

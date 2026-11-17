@@ -3,13 +3,24 @@ title: RepTracker
 summary: Built a web-based workout tracker for logging sets, exercises and reps combined with statistics.
 period: 2026
 featured: false
+solo: true
 order: 5
+images:
+  - src: /projects/rep-tracker/stats.png
+    alt: "The stats dashboard for one exercise: best estimated 1RM, heaviest set, best session, trend, and a chart of estimated 1RM over six months"
+    caption: "Estimated 1RM over time on the desktop dashboard"
+  - src: /projects/rep-tracker/routines.png
+    alt: "The phone home screen listing workout routines with their exercises and a start button for each"
+    caption: "Picking a routine on a phone"
+  - src: /projects/rep-tracker/logging.png
+    alt: "Logging a set on a phone: reps and weight controls, the sets done so far and a rest timer"
+    caption: "Logging a set, with the rest timer running"
 ---
 
 
-## Problem
+## Summary
 
-Logging weights and reps on a phone mid-workout has to work on weak gym signal. Saving every tap over mobile data felt unresponsive. A plain log also doesn't show whether training is progressing: weekly volume, sets per muscle group, strength over time, or lifts that have stalled. RepTracker splits the job in two: a phone-first logger for the gym, and a stats dashboard for a desktop afterwards.
+RepTracker is a web-based workout tracker in two parts: a phone-first logger for recording sets, weights and reps at the gym, and a desktop dashboard for statistics afterwards. The logger keeps working on weak gym signal, so a tap never waits on the network. The dashboard shows whether training is progressing: weekly volume, sets per muscle group, strength over time and lifts that have stalled.
 
 ## Stack
 
@@ -24,26 +35,19 @@ Logging weights and reps on a phone mid-workout has to work on weak gym signal. 
 - Docker: a multi-stage build that produces one image serving both the API and the frontend
 - Render: hosting
 
-## My role
+## Key decisions
 
-Solo project: designed and built the API, data model, statistics, frontend and deployment. Main decisions:
-
-- **One deployable.** The API serves `/api/*` and falls through to the built frontend, so there's one origin, no CORS and a same-site session cookie.
 - **Passwordless accounts.** Sign-up generates a 20-digit login code (19 random digits plus a Luhn check digit). The code is stored as an HMAC-SHA256 hash keyed with a secret that's kept outside the database. Sessions are opaque tokens in an HttpOnly cookie, stored hashed so they can be revoked.
 - **Offline-tolerant logging.** A workout in progress lives in the browser's local storage, so a tap never waits on the network. Finishing sends the whole workout in one request. The id is generated on the phone, so retrying a save is safe.
-- **Bounded hosting cost.** Every endpoint is limited: rate limits per account and per IP, per-user caps on stored data, a ceiling on accounts and limits on request size.
 - **Training statistics.** Estimated 1RM uses the Epley formula and ignores sets above 12 reps. Personal records are recomputed by replaying history, so editing a set corrects them. The app also detects stalled lifts and flags likely logging mistakes.
-- **Data tools.** CSV import with a preview and all-or-nothing commit, CSV export, and merging of duplicate exercises.
-- **Accessible charts.** The chart colour palette was checked for contrast and colour-vision deficiency in both light and dark themes.
 
 ## Results
 
 - Deployed and running on Render as one Docker container backed by PostgreSQL.
 - Shipped features: logging workouts from routines or empty sessions, last session's sets shown alongside the current ones, a rest timer that keeps time with the screen off, correcting saved workouts, and a desktop dashboard. The dashboard covers weekly volume, hard sets per muscle group, a consistency calendar, estimated 1RM over time, personal records and stalled lifts.
-- The rule that flags logging mistakes was tuned on a real training history of 2,840 exercise sessions. Comparing each session only with its immediate neighbours flagged 172 of them, mostly a heavy and a light variant of a lift logged under one name. The final rule compares each session with the three before and the three after, and flags 39, including the actual typos.
-- TODO: Who uses the live app, and are there any usage numbers (accounts, workouts logged)?
+
 
 ## Links
 
-- Live site: https://reptracker-9fku.onrender.com/
+- Live site: https://reptracker-9fku.onrender.com/ (might be down if I forget to update DB, since render has a 1 month DB period limit for free tier :skull:)
 - GitHub repository: https://github.com/xZenshin/RepTracker

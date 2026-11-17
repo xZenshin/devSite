@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
-import { splitCitations } from "../lib/citations";
+import { stripCitations } from "../lib/citations";
 import type { Section } from "../lib/content";
 import { sourceTitle } from "../lib/prompt";
 import type { EvalCase } from "./cases";
@@ -27,7 +27,7 @@ You get a visitor's question, the assistant's answer, and checks to apply. Every
 - declined: true if the answer refuses the request, or says the website doesn't have the requested information. Adding related information afterwards doesn't change this.
 - explanation: one or two sentences on the main reason for your grades.`;
 
-export interface JudgeResult {
+interface JudgeResult {
   verdict: JudgeVerdict;
   usage: Anthropic.Usage;
 }
@@ -58,7 +58,7 @@ export async function judge(evalCase: EvalCase, answerText: string, siteContent:
         role: "user",
         content: [
           `<question>${evalCase.question}</question>`,
-          `<answer>${withoutCitations(answerText)}</answer>`,
+          `<answer>${stripCitations(answerText)}</answer>`,
           `<expected_facts>\n${numbered(facts)}\n</expected_facts>`,
           `<forbidden_claims>\n${numbered(forbidden)}\n</forbidden_claims>`,
         ].join("\n\n"),
@@ -94,14 +94,6 @@ export async function judge(evalCase: EvalCase, answerText: string, siteContent:
  */
 export function formatSiteContent(sections: Section[]): string {
   return sections.map((section) => `## ${sourceTitle(section)}\n${section.text}`).join("\n\n");
-}
-
-/** Removes [n] markers: the judge grades claims, and code grades citations. */
-function withoutCitations(answer: string): string {
-  return splitCitations(answer)
-    .map((segment) => (segment.type === "text" ? segment.text : ""))
-    .join("")
-    .replace(/ +([.,;:])/g, "$1");
 }
 
 function numbered(items: string[]): string {

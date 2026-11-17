@@ -1,7 +1,7 @@
 name: Evals
 
 # Runs the 40-question eval in both modes on PRs that can change an answer.
-# One rep keeps a run cheap; the README numbers come from 3-rep local runs.
+# One rep keeps a run cheap; the numbers in TECHNICAL.md come from 3-rep local runs.
 on:
   pull_request:
     paths:

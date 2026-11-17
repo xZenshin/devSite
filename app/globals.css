@@ -183,31 +183,6 @@ body::after {
   }
 }
 
-/* The scroll cue's line runs downwards on a loop. */
-@media (prefers-reduced-motion: no-preference) {
-  .scroll-line {
-    animation: scroll-line 2.2s var(--ease-in-out) infinite;
-  }
-}
-@keyframes scroll-line {
-  0% {
-    transform: scaleY(0);
-    transform-origin: top;
-  }
-  45% {
-    transform: scaleY(1);
-    transform-origin: top;
-  }
-  55% {
-    transform: scaleY(1);
-    transform-origin: bottom;
-  }
-  100% {
-    transform: scaleY(0);
-    transform-origin: bottom;
-  }
-}
-
 /* A citation jumps to a section: the section flashes and keeps a white bar. */
 .page-section {
   scroll-margin-top: 6rem;
@@ -251,6 +226,32 @@ body::after {
   }
   to {
     clip-path: inset(0 0 0 0);
+  }
+}
+
+/* The catch card and the basket list rise into place; the basket's count flashes on a catch. */
+@media (prefers-reduced-motion: no-preference) {
+  .catch-in {
+    animation: catch-in 520ms var(--ease-out-expo) both;
+  }
+  .basket-count {
+    animation: count-flash 900ms ease-out;
+  }
+}
+@keyframes catch-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes count-flash {
+  from {
+    background: var(--bone);
+    color: var(--black);
   }
 }
 

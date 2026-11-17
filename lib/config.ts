@@ -20,8 +20,22 @@ export const MAX_HISTORY_MESSAGES = 6;
 /** Earlier assistant turns come from the client, so they are untrusted; ours are far shorter. */
 export const MAX_ASSISTANT_CHARS = 2000;
 
-/** Largest request body accepted, before it is parsed. */
-export const MAX_BODY_CHARS = 32_000;
+/** Largest request body accepted, in bytes. Reading stops as soon as a body passes it. */
+export const MAX_BODY_BYTES = 32_000;
+
+/** Questions one visitor (by IP) may ask per window. Matches the Vercel Firewall rule in TECHNICAL.md. */
+export const VISITOR_LIMIT = 10;
+export const VISITOR_WINDOW_SECONDS = 600;
+
+/**
+ * Questions all visitors together may ask per day (UTC), so no number of IPs
+ * can run up the bill. A worst-case question costs about $0.001, a typical one
+ * $0.0002. CHAT_DAILY_LIMIT overrides it; 0 turns the chat off.
+ */
+export function dailyLimit(): number {
+  const value = Number(process.env.CHAT_DAILY_LIMIT);
+  return process.env.CHAT_DAILY_LIMIT && Number.isInteger(value) && value >= 0 ? value : 1000;
+}
 
 /**
  * "baseline" puts all content in the prompt; "retrieval" puts only the top

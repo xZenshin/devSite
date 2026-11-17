@@ -50,17 +50,19 @@ export function useChatContext(): ChatContextValue {
 }
 
 /**
- * The Vercel Firewall rate limit answers 429 before our API runs, with its own
- * body. Replace it with a message the widget can show as is.
+ * Rate limits answer 429 (one visitor, from the Vercel Firewall or the API) or
+ * 503 (the daily limit for everyone), and the firewall's body isn't ours.
+ * Replace both with a message the widget can show as is.
  */
 function withRateLimitMessage(contactEmail?: string): typeof fetch {
   return async (input, init) => {
     const response = await fetch(input, init);
-    if (response.status !== 429) return response;
+    if (response.status !== 429 && response.status !== 503) return response;
     const reach = contactEmail ? `, or email Alexander at ${contactEmail}` : "";
-    return Response.json(
-      { error: `You've asked a lot of questions in a short time. Wait a few minutes and try again${reach}.` },
-      { status: 429 },
-    );
+    const error =
+      response.status === 429
+        ? `You've asked a lot of questions in a short time. Wait a few minutes and try again${reach}.`
+        : `The assistant has answered all the questions it can for today. Try again tomorrow${reach}.`;
+    return Response.json({ error }, { status: response.status });
   };
 }

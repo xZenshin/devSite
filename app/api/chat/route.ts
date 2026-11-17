@@ -1,25 +1,35 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { streamAnswer, type AnswerMode, type ChatUIMessage } from "@/lib/answer";
-import { MAX_BODY_CHARS, retrievalMode } from "@/lib/config";
+import { MAX_BODY_BYTES, retrievalMode } from "@/lib/config";
 import { getContent, type Section } from "@/lib/content";
+import { safeEqual } from "@/lib/hmac";
 import { chatRequestSchema, retrievalQuery, toModelMessages } from "@/lib/messages";
 import { buildSystemPrompt } from "@/lib/prompt";
+import { checkRateLimit, clientIp } from "@/lib/rate-limit";
 import { retrieve } from "@/lib/retrieval";
 import { supabaseSearch } from "@/lib/supabase";
+
+/** An answer takes 1–3 s; anything near this is stuck. */
+export const maxDuration = 30;
 
 const BUSY_MESSAGE = "The assistant is busy. Try again in a minute.";
 const GENERIC_ERROR = "The assistant couldn't answer. Try again in a moment.";
 
 /**
- * Rate limiting happens before this runs: a Vercel Firewall rule limits POST
- * /api/chat per IP and answers 429 itself (see the README).
+ * Guards run cheapest first, and everything that costs money comes last:
+ * only same-site JSON requests, a capped body, a valid conversation, then the
+ * rate limits. A Vercel Firewall rule (see TECHNICAL.md) also limits each IP
+ * before this runs at all.
  */
 export async function POST(request: Request): Promise<Response> {
   const startedAt = performance.now();
 
-  const raw = await request.text();
-  if (raw.length > MAX_BODY_CHARS) {
+  const crossSite = rejectCrossSite(request);
+  if (crossSite) return crossSite;
+
+  const raw = await readBody(request, MAX_BODY_BYTES);
+  if (raw === null) {
     return Response.json({ error: "The conversation is too long. Start over to ask more." }, { status: 413 });
   }
   const body = chatRequestSchema.safeParse(parseJson(raw));
@@ -29,6 +39,15 @@ export async function POST(request: Request): Promise<Response> {
   const conversation = toModelMessages(body.data.messages);
   if (!conversation.ok) {
     return Response.json({ error: conversation.error }, { status: 400 });
+  }
+
+  const trusted = isTrustedCaller(request);
+  const limited = trusted ? "ok" : await checkRateLimit(clientIp(request));
+  if (limited === "visitor") {
+    return Response.json({ error: "Too many questions. Wait a few minutes and try again." }, { status: 429 });
+  }
+  if (limited === "daily") {
+    return Response.json({ error: "The assistant has answered all it can for today." }, { status: 503 });
   }
 
   const stream = createUIMessageStream<ChatUIMessage>({
@@ -43,12 +62,66 @@ export async function POST(request: Request): Promise<Response> {
         mode,
         startedAt,
         retrievalMs: mode === "retrieval" ? Math.round(performance.now() - retrievalStartedAt) : null,
+        diagnostics: trusted,
+        signal: request.signal,
         writer,
       });
     },
-    onError: toUserFacingError,
+    // A visitor who left mid-answer is not an error worth logging.
+    onError: (error) => (request.signal.aborted ? GENERIC_ERROR : toUserFacingError(error)),
   });
   return createUIMessageStreamResponse({ stream });
+}
+
+/**
+ * Stops other websites from making their visitors' browsers call this API
+ * (which would cost money and dodge the per-IP limit). A cross-site page can
+ * only send JSON after a CORS preflight, which this route never approves, so
+ * requiring JSON closes the form and text/plain routes. Browsers also say where
+ * a request came from in Sec-Fetch-Site; scripts and the evals send none.
+ */
+function rejectCrossSite(request: Request): Response | null {
+  const type = request.headers.get("content-type") ?? "";
+  if (!/^application\/json\s*(;|$)/i.test(type)) {
+    return Response.json({ error: "Send the request as application/json." }, { status: 415 });
+  }
+  const site = request.headers.get("sec-fetch-site");
+  if (site && site !== "same-origin") {
+    return Response.json({ error: "Cross-site requests aren't allowed." }, { status: 403 });
+  }
+  return null;
+}
+
+/**
+ * Callers that skip the rate limits and receive diagnostics with each answer:
+ * anything outside production (local dev, the in-process evals, `npm run ask`),
+ * and requests carrying the EVAL_TOKEN, for evals against a deployment.
+ */
+function isTrustedCaller(request: Request): boolean {
+  if (process.env.NODE_ENV !== "production") return true;
+  const token = process.env.EVAL_TOKEN;
+  const given = request.headers.get("x-eval-token");
+  return Boolean(token && given && safeEqual(token, given));
+}
+
+/** The body as text, or null as soon as it passes `limit` bytes, without reading the rest. */
+async function readBody(request: Request, limit: number): Promise<string | null> {
+  if (Number(request.headers.get("content-length")) > limit) return null;
+  if (!request.body) return "";
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > limit) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 /**

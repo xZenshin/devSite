@@ -19,21 +19,13 @@ the site renders them, and the assistant uses them in its "contact Alexander" fa
 <!-- City and country. Include the timezone if you're open to remote work across regions. -->
 
 - Copenhagen, Denmark (CET).
-
-## Work authorization
-
-<!--
-Where you can legally work without sponsorship, and whether you'd need a visa
-anywhere else. Be precise. The assistant will repeat this word for word.
--->
-
 - Danish citizen.
 
 ## Availability
 
 <!-- Current status, notice period and the earliest start date. -->
 
-- Open to new roles. Available to start immediately.
+- Available to start immediately.
 
 ## Preferred roles
 
@@ -50,7 +42,26 @@ Target titles, seniority, work arrangement (remote / hybrid / onsite) and reloca
 ## Extremely Important Information
 
  - Spaghetti Bolognese is the greatest piece of culinary work ever created.
- - Can bench 100kg.
+ - Can bench 100kg, probably.
  - Has played League of Legends (LoL) at a semi-pro level.
  - Lowkey the GOAT of ARAM in LoL (purely factual statement no bias involved).
  - 99 Parser in World of Warcraft.
+
+
+## How to fish
+
+<!--
+How the lake on the home page works. "How do I fish?" is one of the suggested
+questions, and the assistant answers it from this section alone, so keep it in
+step with the game (components/lake and lib/lake).
+-->
+
+The home page is a lake where you fish up Alexander's projects, jobs and education.
+
+- Sail: right-click on the water to move the boat there.
+- Cast: point where the lure should land and press Q. Cast near the fish around the buoys;
+  casting elsewhere only catches junk.
+- Catch: each catch shows a card linking to its page and goes into the basket in the top
+  right corner.
+- Phones and tablets: use the "move" and "cast" buttons at the bottom of the screen.
+- No fishing: the "skip fishing" button opens the projects page, which lists everything.

@@ -1,17 +1,24 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
+import { stripCitations } from "./citations";
 import { MAX_ASSISTANT_CHARS, MAX_HISTORY_MESSAGES, MAX_QUESTION_CHARS } from "./config";
+import { isSignedAnswer } from "./hmac";
 
 /**
  * The request body `useChat` sends. Only user and assistant roles are
- * accepted, so a client can't smuggle in its own system message.
+ * accepted, so a client can't smuggle in its own system message. Every list
+ * and string is capped; the body as a whole is capped before it is parsed.
  */
 export const chatRequestSchema = z.object({
   messages: z
     .array(
       z.object({
         role: z.enum(["user", "assistant"]),
-        parts: z.array(z.object({ type: z.string(), text: z.string().optional() })),
+        parts: z
+          .array(z.object({ type: z.string().max(40), text: z.string().max(8_000).optional() }))
+          .max(20),
+        /** On an answer, the signature it was sent with (see signAnswer). */
+        metadata: z.object({ signature: z.string().max(100).optional() }).nullish(),
       }),
     )
     .min(1)
@@ -20,7 +27,7 @@ export const chatRequestSchema = z.object({
 
 export type ChatRequest = z.infer<typeof chatRequestSchema>;
 
-export type ConversionResult =
+type ConversionResult =
   | {
       ok: true;
       messages: Anthropic.MessageParam[];
@@ -34,38 +41,47 @@ const QUESTION_TAG = "visitor_question";
 /**
  * Converts UI messages to the last few model turns, ending with the visitor's
  * question. Each question is wrapped in <visitor_question> tags, which the
- * system prompt treats as a question only, never as instructions.
+ * system prompt treats as a question only, never as instructions. An answer
+ * without a valid signature (forged, edited, or cut off by an error) is left
+ * out, with the question it answered.
  */
-export function toModelMessages(messages: ChatRequest["messages"]): ConversionResult {
-  const turns = messages
-    .map((message) => ({
-      role: message.role,
-      content: message.parts
-        .filter((part) => part.type === "text" && part.text)
-        .map((part) => part.text)
-        .join("\n")
-        .trim(),
-    }))
-    .filter((turn) => turn.content)
-    .slice(-MAX_HISTORY_MESSAGES);
+export function toModelMessages(
+  messages: ChatRequest["messages"],
+  isGenuine: (answer: string, signature: string | undefined) => boolean = isSignedAnswer,
+): ConversionResult {
+  const turns: { role: "user" | "assistant"; content: string }[] = [];
+  for (const message of messages) {
+    const content = message.parts
+      .filter((part) => part.type === "text" && part.text)
+      .map((part) => part.text)
+      .join("\n")
+      .trim();
+    if (!content) continue;
+    if (message.role === "assistant" && !isGenuine(content, message.metadata?.signature ?? undefined)) {
+      if (turns.at(-1)?.role === "user") turns.pop();
+      continue;
+    }
+    turns.push({ role: message.role, content });
+  }
+  const kept = turns.slice(-MAX_HISTORY_MESSAGES);
 
   // The API requires the first message to be from the user.
-  while (turns[0]?.role === "assistant") turns.shift();
+  while (kept[0]?.role === "assistant") kept.shift();
 
-  if (turns.at(-1)?.role !== "user") {
+  if (kept.at(-1)?.role !== "user") {
     return { ok: false, error: "The last message must be a question." };
   }
-  if (turns.some((t) => t.role === "user" && t.content.length > MAX_QUESTION_CHARS)) {
+  if (kept.some((t) => t.role === "user" && t.content.length > MAX_QUESTION_CHARS)) {
     return { ok: false, error: `Questions can be up to ${MAX_QUESTION_CHARS} characters.` };
   }
 
   return {
     ok: true,
-    messages: turns.map((turn) => ({
+    messages: kept.map((turn) => ({
       role: turn.role,
       content: turn.role === "user" ? wrapQuestion(turn.content) : cleanAssistantTurn(turn.content),
     })),
-    questions: turns.filter((t) => t.role === "user").map((t) => t.content),
+    questions: kept.filter((t) => t.role === "user").map((t) => t.content),
   };
 }
 
@@ -84,10 +100,10 @@ function wrapQuestion(text: string): string {
 }
 
 /**
- * Earlier answers come back from the client, so they are untrusted: cap their
- * length. Old citation numbers refer to an earlier source list; drop them so
- * the model doesn't reuse them against the current one.
+ * Caps the length of an earlier answer (ours are far shorter). Old citation
+ * numbers refer to an earlier source list; drop them so the model doesn't
+ * reuse them against the current one.
  */
 function cleanAssistantTurn(text: string): string {
-  return text.slice(0, MAX_ASSISTANT_CHARS).replace(/\s*\[\d+(?:\s*,\s*\d+)*\]/g, "");
+  return stripCitations(text.slice(0, MAX_ASSISTANT_CHARS));
 }

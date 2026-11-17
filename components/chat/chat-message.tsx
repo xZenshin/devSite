@@ -43,25 +43,6 @@ export function ChatMessage({
           ),
         )}
       </p>
-      {sources.size > 0 && (
-        <div className="mt-4 border-t border-line pt-3">
-          <h3 className="font-mono text-[12px] text-ash">sources</h3>
-          <ol className="mt-2 space-y-1.5 text-sm">
-            {[...sources].map(([n, source]) => (
-              <li key={n} className="flex gap-3">
-                <span className="w-4 shrink-0 font-mono text-[12px] text-ash">{n}</span>
-                <Link
-                  href={source.url}
-                  onClick={onNavigate}
-                  className="text-bone underline decoration-dim underline-offset-4 transition-colors hover:decoration-bone"
-                >
-                  {source.title}
-                </Link>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
     </li>
   );
 }
@@ -86,6 +67,8 @@ function Citation({
         href={source.url}
         onClick={onNavigate}
         aria-label={`Source ${n}: ${source.title}`}
+        // With no list of sources below the answer, hovering a marker says where it leads.
+        title={source.title}
         className="mx-0.5 inline-block border border-bone/40 px-1 align-baseline font-mono text-[0.75em] leading-snug text-bone transition-colors hover:border-bone hover:bg-bone hover:text-black"
       >
         {n}

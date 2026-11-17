@@ -1,6 +1,6 @@
 import type { Chunk } from "./chunking";
 
-export interface SyncPlan {
+interface SyncPlan {
   /** New or changed chunks: these get embedded and upserted. */
   upsert: Chunk[];
   unchanged: number;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractCitations, splitCitations } from "./citations";
+import { extractCitations, splitCitations, stripCitations } from "./citations";
 
 describe("extractCitations", () => {
   it("returns cited numbers in order of first appearance", () => {
@@ -32,5 +32,13 @@ describe("splitCitations", () => {
 
   it("leaves non-numeric brackets as text", () => {
     expect(splitCitations("See [the CV]")).toEqual([{ type: "text", text: "See [the CV]" }]);
+  });
+});
+
+describe("stripCitations", () => {
+  it("removes markers and the spaces before them, keeping line breaks and other brackets", () => {
+    expect(stripCitations("In Copenhagen [1, 2]. A citizen [3] of Denmark.\n[the CV]")).toBe(
+      "In Copenhagen. A citizen of Denmark.\n[the CV]",
+    );
   });
 });

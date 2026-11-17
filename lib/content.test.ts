@@ -92,6 +92,37 @@ order: 3
     );
   });
 
+  it("reads solo and images from project frontmatter, keeping images out of the assistant's text", () => {
+    const raw = `---
+title: RepTracker
+summary: A workout tracker.
+solo: true
+images:
+  - src: /projects/rep-tracker/log.png
+    alt: The workout logger on a phone
+    caption: Logging a set
+  - src: log.png
+    alt: Not under public
+  - src: /projects/rep-tracker/stats.png
+    alt: TODO
+---
+## Stack
+
+- React
+`;
+    const parsed = parseContentFile("projects/rep-tracker.md", raw);
+
+    expect(parsed.page.solo).toBe(true);
+    expect(parsed.page.images).toEqual([
+      { src: "/projects/rep-tracker/log.png", alt: "The workout logger on a phone", caption: "Logging a set" },
+    ]);
+    expect(parsed.warnings).toHaveLength(2);
+    expect(parsed.sections[0].text).toBe(
+      "A workout tracker.\n- Solo project: Alexander designed and built it alone.",
+    );
+    expect(parsed.sections.map((s) => s.text).join("\n")).not.toContain("log.png");
+  });
+
   it("builds the contact section and contact details from frontmatter, skipping TODOs", () => {
     const raw = `---
 title: Quick facts

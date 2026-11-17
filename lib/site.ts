@@ -1,13 +1,22 @@
+import path from "node:path";
 import { cacheLife } from "next/cache";
-import { loadContent, type Contact, type PageMeta, type Section } from "./content";
+import { loadContent, type Contact, type PageMeta, type ProjectImage, type Section } from "./content";
+import { readImageSize } from "./image-size";
 
-export interface PageSection extends Section {
+interface PageSection extends Section {
   /** The heading's anchor; the same one citations link to. */
   anchor: string;
 }
 
-export interface SitePage extends PageMeta {
+/** A project image with its pixel size, so its frame can match its shape. */
+export interface SiteImage extends ProjectImage {
+  width: number;
+  height: number;
+}
+
+export interface SitePage extends Omit<PageMeta, "images"> {
   sections: PageSection[];
+  images: SiteImage[];
 }
 
 export interface Site {
@@ -27,14 +36,21 @@ export async function getSite(): Promise<Site> {
   const { pages, sections, contact } = await loadContent();
   return {
     contact,
-    pages: pages.map((page) => ({
+    pages: await Promise.all(pages.map(async (page) => ({
       ...page,
+      images: await Promise.all(page.images.map(withSize)),
       // The project overview (no anchor) is rendered from frontmatter in the page header.
       sections: sections
         .filter((section) => section.file === page.file && section.url.includes("#"))
         .map((section) => ({ ...section, anchor: section.url.split("#")[1] })),
-    })),
+    }))),
   };
+}
+
+/** Unknown sizes fall back to 16:10; the frame then crops rather than letterboxes. */
+async function withSize(image: ProjectImage): Promise<SiteImage> {
+  const size = await readImageSize(path.join(process.cwd(), "public", image.src));
+  return { ...image, ...(size ?? { width: 1600, height: 1000 }) };
 }
 
 export async function getPage(url: string): Promise<SitePage | undefined> {
