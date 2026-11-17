@@ -1,3 +1,4 @@
+import { between } from "./math";
 import type { Vec } from "./world";
 
 /**
@@ -46,13 +47,13 @@ export interface Flight {
 }
 
 /** A bird in the air: where it is, its wings (an index into the drawings of BIRD), and whether it flies north. */
-export interface Bird extends Vec {
+interface Bird extends Vec {
   wings: number;
   north: boolean;
 }
 
 /** The part of the screen plane in view, in pixels. */
-export interface View {
+interface View {
   left: number;
   right: number;
   top: number;
@@ -71,8 +72,8 @@ export function planFlight(view: View, time: number, rng: () => number): Flight 
   const mate =
     rng() < PAIRS
       ? {
-          x: (rng() < 0.5 ? -1 : 1) * (MATE_SIDE[0] + (MATE_SIDE[1] - MATE_SIDE[0]) * rng()),
-          y: behind * (MATE_BEHIND[0] + (MATE_BEHIND[1] - MATE_BEHIND[0]) * rng()),
+          x: (rng() < 0.5 ? -1 : 1) * between(MATE_SIDE, rng()),
+          y: behind * between(MATE_BEHIND, rng()),
         }
       : null;
   return {

@@ -1,6 +1,6 @@
 import type { Contact, Section } from "./content";
 
-export const SYSTEM_PROMPT_TEMPLATE = `You are the portfolio assistant on Alexander's personal website. Visitors are mostly recruiters and hiring managers.
+const SYSTEM_PROMPT_TEMPLATE = `You are the portfolio assistant on Alexander's personal website. Visitors are mostly recruiters and hiring managers.
 
 Answer questions about Alexander and about using this website using ONLY the information inside <context>. Rules:
 - Assume a slightly funny character when responding, but keep in mind the users are probably recruiters.
@@ -27,7 +27,7 @@ export function buildSystemPrompt(sources: Section[], contact: Contact): string 
   );
 }
 
-export function formatSources(sources: Section[]): string {
+function formatSources(sources: Section[]): string {
   return sources
     .map(
       (section, i) =>

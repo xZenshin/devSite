@@ -28,8 +28,8 @@ when that changes.
   Off-topic requests and prompt-injection attempts are declined too.
 - **Works for everyone.** Keyboard and screen-reader accessible, full screen on phones,
   with suggested questions to start from.
-- **Keeps no record of visitors.** The app doesn't log questions, and rate limiting is done
-  by Vercel's firewall rather than the app.
+- **Keeps no record of visitors.** The app doesn't log questions. Rate limits count visitors
+  by a keyed hash of their IP, never the IP itself, and the counts are deleted after two days.
 
 ## The home page is a lake
 
@@ -90,7 +90,7 @@ flowchart LR
 
   subgraph Ask["Each question"]
     W["Chat widget<br/>(AI SDK useChat)"] --> FW["Vercel Firewall<br/>10 per 10 min per IP"]
-    FW --> API["POST /api/chat<br/>validate, cap length,<br/>wrap question in tags"]
+    FW --> API["POST /api/chat<br/>validate, cap length, rate limits,<br/>wrap question in tags"]
     API --> V["Embed question<br/>→ vector search"]
     API --> T["Names and technical terms<br/>→ full-text search"]
     V --> F["Reciprocal rank fusion<br/>top 5 sections"]
@@ -146,10 +146,21 @@ system prompt is identical for every question and is read from cache at a tenth 
 price. Retrieval prompts differ per question, so a cache write would only add 25%.
 
 **Guardrails.**
-- Rate limiting is a Vercel Firewall rule, so a blocked request never reaches the function
-  or the model.
-- Questions are capped at 500 characters, earlier assistant turns at 2,000 (they come from
-  the browser, so they're untrusted), request bodies at 32k, answers at 1,024 tokens.
+- **Spending.** A Vercel Firewall rule limits each IP before the function runs. The app
+  enforces the same per-IP limit itself, plus a daily limit for all visitors together
+  (1,000 questions, about $1 at worst; `CHAT_DAILY_LIMIT` changes it, `0` turns the chat off).
+  The counts live in Postgres ([migration](supabase/migrations/20261117000000_chat_rate_limit.sql)).
+  A monthly spend limit in the Anthropic Console is the backstop.
+- **Only this site can call the API.** It accepts only `application/json` (another site's page
+  can't send that without a CORS preflight, which is never approved) and rejects requests the
+  browser marks as cross-site, so other pages can't spend visitors' IPs on it.
+- **The history can't be forged.** The browser sends earlier answers back with each question.
+  Each answer is signed with an HMAC when it is sent, and answers that don't verify are dropped,
+  so a visitor can't put words in the assistant's mouth.
+- Questions are capped at 500 characters, earlier answers at 2,000, request bodies at 32 KB
+  (reading stops there), answers at 1,024 tokens and 30 s. Generation stops if the visitor leaves.
+- Latency, token and cost details go only to the evals, not to visitors. Pages send a
+  Content-Security-Policy and the usual hardening headers.
 - Each question is wrapped in `<visitor_question>` tags, and copies of the tag inside it are
   removed. The system prompt treats everything inside as a question, never as instructions,
   and the browser can't send system messages.
@@ -271,8 +282,9 @@ npm ci
 cp .env.example .env.local     # fill in the four keys
 ```
 
-1. **Database:** in the Supabase SQL editor, run
-   [supabase/migrations/20261027000000_chunks.sql](supabase/migrations/20261027000000_chunks.sql).
+1. **Database:** in the Supabase SQL editor, run the files in
+   [supabase/migrations/](supabase/migrations/) in order: the chunks table and search
+   functions, then the rate-limit counter.
 2. **Ingest:** `npm run ingest` (`--dry-run` shows the plan, `--strict` fails on `TODO`s).
 3. **Run:** `npm run dev`, then open http://localhost:3000, or in another terminal
    `npm run ask -- "Is Alexander open to relocation?"`.
@@ -284,7 +296,7 @@ cp .env.example .env.local     # fill in the four keys
 | `npm run typecheck`, `npm run lint` | TypeScript and ESLint |
 | `npm run ingest` | Chunk, embed and sync `/content` to Supabase |
 | `npm run ask -- "…"` | Ask the running server one question; prints sources, latency and cost |
-| `npm run eval` | Full evaluation, both modes, 3 runs (`--mode`, `--reps`, `--cases`, `--url`, `--min-pass`) |
+| `npm run eval` | Full evaluation, both modes, 3 runs (`--mode`, `--reps`, `--cases`, `--url`, `--min-pass`). With `--url`, set the deployment's `EVAL_TOKEN` too |
 
 **Deploying on Vercel:**
 - Add the four keys as environment variables, and set the function region to match the
@@ -292,6 +304,11 @@ cp .env.example .env.local     # fill in the four keys
 - Add a firewall rule under Project → Firewall → New Rule: if Request Path equals
   `/api/chat` and Method equals `POST`, then Rate Limit, fixed window of 600 s, 10 requests,
   keyed by IP, default (429) action.
+- Add a second rule, the off switch, and leave it disabled: same conditions, action Deny.
+  Enabling it stops the chat at once, without a redeploy.
+- Set a monthly spend limit for the workspace in the Anthropic Console, and one in Voyage AI.
+- Optional: `EVAL_TOKEN` (any long random string) lets `npm run eval -- --url …` get diagnostics
+  and skip the rate limits; `CHAT_DAILY_LIMIT` changes the daily limit.
 - In GitHub, add the same keys as repository secrets. [ingest.yml](.github/workflows/ingest.yml)
   re-embeds content on pushes to `main`. [evals.yml](.github/workflows/evals.yml) runs one
   evaluation pass on relevant pull requests and fails below an 85% pass rate.
@@ -306,7 +323,7 @@ content/             the site's content: the single source of truth
 lib/                 content parsing, chunking, retrieval, prompt, streaming answer; lake/ holds the game rules
 scripts/             ingest.ts, ask.ts
 evals/               questions.json, run.ts, judge.ts, scoring, saved results
-supabase/migrations/ table, full-text index and search functions
+supabase/migrations/ table, full-text index, search functions and the rate-limit counter
 ```
 
 

@@ -1,4 +1,5 @@
-import { shoreRadius, type Lake } from "./lake";
+import { offShore, type Lake } from "./lake";
+import { between, clamp } from "./math";
 import { MOOSE, MOOSE_FEET, mooseFacingWest } from "./sprites";
 import { distance, type Vec } from "./world";
 
@@ -21,8 +22,8 @@ export const ALERT_RADIUS = 500;
 /** How long it stares at the boat, `[!]` over its head, before it runs. */
 export const ALERT_TIME = 0.7;
 /** How fast it runs off, and walks back, in pixels per second. */
-export const RUN_SPEED = 220;
-export const WALK_SPEED = 70;
+const RUN_SPEED = 220;
+const WALK_SPEED = 70;
 /** How far it runs away from the lake, and along the shore away from the boat, when startled. */
 const FLEE_INLAND = 260;
 const FLEE_ALONG = 120;
@@ -43,9 +44,9 @@ const GRAZE_TIME = [2, 4] as const;
 const NIBBLE = 0.3;
 
 /** What the moose is doing. */
-export type MooseMode = "idle" | "alert" | "flee" | "pause" | "return";
+type MooseMode = "idle" | "alert" | "flee" | "pause" | "return";
 /** Its pose while idle. */
-export type IdlePose = "stand" | "ear" | "tail" | "bow" | "graze" | "rise";
+type IdlePose = "stand" | "ear" | "tail" | "bow" | "graze" | "rise";
 
 export interface Moose {
   /** Where its feet are. */
@@ -69,13 +70,11 @@ export interface Moose {
   nextGraze: number;
 }
 
-const between = (range: readonly [number, number], rng: () => number) => range[0] + rng() * (range[1] - range[0]);
 const angleOf = (lake: Lake, p: Vec) => Math.atan2(p.y - lake.centre.y, p.x - lake.centre.x);
 
 /** A spot on the land at `angle` from the lake's middle, `back` up from the water. */
 function spot(lake: Lake, angle: number, back: number): Vec {
-  const r = shoreRadius(lake, angle) + back;
-  return { x: lake.centre.x + Math.cos(angle) * r, y: lake.centre.y + Math.sin(angle) * r };
+  return offShore(lake, angle, -back);
 }
 
 /** Facing the lake: west, on the east shore. */
@@ -83,7 +82,7 @@ const towardsLake = (lake: Lake, at: Vec): 1 | -1 => (lake.centre.x >= at.x ? 1 
 
 /** The moose, at a spot by the east shore that follows from the lake's own numbers and `rng`. */
 export function createMoose(lake: Lake, rng: () => number): Moose {
-  const at = spot(lake, (rng() * 2 - 1) * SHORE_SPREAD, between(NEAR_WATER, rng));
+  const at = spot(lake, (rng() * 2 - 1) * SHORE_SPREAD, between(NEAR_WATER, rng()));
   return {
     at,
     facing: towardsLake(lake, at),
@@ -95,8 +94,8 @@ export function createMoose(lake: Lake, rng: () => number): Moose {
     pose: "stand",
     poseT: 0,
     poseUntil: 0,
-    nextTwitch: between(TWITCH_EVERY, rng),
-    nextGraze: between(GRAZE_EVERY, rng),
+    nextTwitch: between(TWITCH_EVERY, rng()),
+    nextGraze: between(GRAZE_EVERY, rng()),
   };
 }
 
@@ -140,8 +139,8 @@ function refuge(lake: Lake, moose: Moose, boat: Vec): Vec {
 /** Its new spot by the water after a scare: a little way along the shore from where it is, and still on the east side. */
 function newSpot(lake: Lake, moose: Moose, rng: () => number): Vec {
   const now = angleOf(lake, moose.at);
-  const angle = now + (rng() < 0.5 ? -1 : 1) * between(NEW_SPOT, rng);
-  return spot(lake, Math.max(-SHORE_SPREAD, Math.min(SHORE_SPREAD, angle)), between(NEAR_WATER, rng));
+  const angle = now + (rng() < 0.5 ? -1 : 1) * between(NEW_SPOT, rng());
+  return spot(lake, clamp(angle, -SHORE_SPREAD, SHORE_SPREAD), between(NEAR_WATER, rng()));
 }
 
 /** Its idle life: twitches now and then, and every so often a bow of the head to graze. */
@@ -154,12 +153,12 @@ function idle(moose: Moose, dt: number, rng: () => number): void {
       moose.pose = "bow";
       moose.poseT = 0;
       moose.poseUntil = BOW_TIME;
-      moose.nextGraze = between(GRAZE_EVERY, rng);
+      moose.nextGraze = between(GRAZE_EVERY, rng());
     } else if (moose.nextTwitch <= 0) {
       moose.pose = rng() < 0.5 ? "ear" : "tail";
       moose.poseT = 0;
       moose.poseUntil = TWITCH_TIME;
-      moose.nextTwitch = between(TWITCH_EVERY, rng);
+      moose.nextTwitch = between(TWITCH_EVERY, rng());
     }
     return;
   }
@@ -168,7 +167,7 @@ function idle(moose: Moose, dt: number, rng: () => number): void {
   const next: Partial<Record<IdlePose, IdlePose>> = { bow: "graze", graze: "rise" };
   moose.pose = next[moose.pose] ?? "stand";
   moose.poseT = 0;
-  moose.poseUntil = moose.pose === "graze" ? between(GRAZE_TIME, rng) : moose.pose === "rise" ? BOW_TIME : 0;
+  moose.poseUntil = moose.pose === "graze" ? between(GRAZE_TIME, rng()) : moose.pose === "rise" ? BOW_TIME : 0;
 }
 
 /**
@@ -210,7 +209,7 @@ export function stepMoose(moose: Moose, lake: Lake, boat: Vec, dt: number, rng: 
     case "flee":
       if (walkTowards(moose, moose.target!, RUN_SPEED * dt)) {
         setMode(moose, "pause");
-        moose.until = between(PAUSE, rng);
+        moose.until = between(PAUSE, rng());
         // It turns to look back the way it came, towards the lake.
         moose.facing = towardsLake(lake, moose.at);
       }

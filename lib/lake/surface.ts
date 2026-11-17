@@ -1,3 +1,4 @@
+import { smoothstep } from "./math";
 import { ASH, DIM, type Glyph } from "./texture";
 import { cellCentre, patchiness, scatter, type Vec } from "./world";
 
@@ -28,11 +29,6 @@ const FOAM = 11;
 /** The share of water cells that ever glint, and the share of its time a glint lasts. */
 const GLINTERS = 0.01;
 const GLINT = 0.025;
-
-const smoothstep = (from: number, to: number, x: number) => {
-  const f = Math.min(1, Math.max(0, (x - from) / (to - from)));
-  return f * f * (3 - 2 * f);
-};
 
 /** The way the wind blows over a lake: across the screen, east or west, give or take a third of a right angle. */
 export function windOf(seed: number): Vec {

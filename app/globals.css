@@ -183,31 +183,6 @@ body::after {
   }
 }
 
-/* The scroll cue's line runs downwards on a loop. */
-@media (prefers-reduced-motion: no-preference) {
-  .scroll-line {
-    animation: scroll-line 2.2s var(--ease-in-out) infinite;
-  }
-}
-@keyframes scroll-line {
-  0% {
-    transform: scaleY(0);
-    transform-origin: top;
-  }
-  45% {
-    transform: scaleY(1);
-    transform-origin: top;
-  }
-  55% {
-    transform: scaleY(1);
-    transform-origin: bottom;
-  }
-  100% {
-    transform: scaleY(0);
-    transform-origin: bottom;
-  }
-}
-
 /* A citation jumps to a section: the section flashes and keeps a white bar. */
 .page-section {
   scroll-margin-top: 6rem;

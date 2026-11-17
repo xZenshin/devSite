@@ -1,7 +1,7 @@
 import GithubSlugger from "github-slugger";
 import type { Site, SitePage } from "./site";
 
-export type CatchKind = "project" | "experience" | "education";
+type CatchKind = "project" | "experience" | "education";
 
 /** Something the lake holds: a project, a job or a degree, with where to read more. */
 export interface Catch {

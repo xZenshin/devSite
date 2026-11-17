@@ -21,7 +21,7 @@ const WAVER = 0.7;
 const SWIRL = 1.8;
 
 /** One puff of smoke. */
-export interface Puff {
+interface Puff {
   /** Where its middle is, in cells from the top of the chimney: columns to the right, rows down (so negative, above). */
   x: number;
   y: number;

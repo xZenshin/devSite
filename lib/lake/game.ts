@@ -1,11 +1,12 @@
 import { JUNK, type Catch, type Junk } from "../catches";
 import { stock, wander, type Shoal, type Swimmer } from "./fish";
 import { BOAT_RADIUS, createLake, inReeds, intoWater, nearestObstruction, type Lake } from "./lake";
+import { lerp, mix, smooth } from "./math";
 import { clampCast, distance, headingIndex, scatter, type Vec } from "./world";
 
 /** World units (pixels) per second, and per second squared. */
 export const BOAT_SPEED = 320;
-export const BOAT_ACCEL = 620;
+const BOAT_ACCEL = 620;
 /** The share of its speed the boat keeps while it pushes through reeds. */
 export const REED_DRAG = 0.4;
 /** How far the lure can be thrown from the boat. */
@@ -22,7 +23,7 @@ const WAVE_DRAG = 1.1;
  * drawing). The wake starts behind it, and the shore, the jetty and rocks are
  * kept BOAT_RADIUS away from it.
  */
-export const HULL_CENTRE_Y = -34;
+const HULL_CENTRE_Y = -34;
 const STERN = { x: 80, y: 30 };
 /** The positions the paddle goes through in one full turn, and the distance paddled between two of them. */
 export const PADDLE_FRAMES = 4;
@@ -47,7 +48,7 @@ const RISE_MIN = 2.5;
 const RISE_MAX = 7;
 
 /** A ring spreading over the water. A negative age is a ring that hasn't started yet. */
-export interface Ripple {
+interface Ripple {
   x: number;
   y: number;
   age: number;
@@ -56,7 +57,7 @@ export interface Ripple {
 }
 
 /** One wave of the boat's wake: it drifts away from the boat's path, slowing, and fades. */
-export interface Wave {
+interface Wave {
   x: number;
   y: number;
   vx: number;
@@ -64,7 +65,7 @@ export interface Wave {
   age: number;
 }
 
-export type LinePhase = "winding" | "flying" | "waiting" | "bite" | "reeling";
+type LinePhase = "winding" | "flying" | "waiting" | "bite" | "reeling";
 
 /**
  * The line while it is out: the rod swung back, the lure thrown, sitting
@@ -136,7 +137,9 @@ export function snapshot(state: GameState): Snapshot | null {
 
 /**
  * A new game, the boat at the start. A seed gives the lake that follows from
- * it, with the boat moored at its jetty; without one there is only open water.
+ * it, with the boat moored at its jetty; without one there is only open water,
+ * with nothing to run into: the site always passes a seed, and the tests use
+ * open water to check sailing and casting on their own.
  * Given a snapshot instead, it is the same lake again, with the boat lying
  * still where it was, its line in.
  */
@@ -157,7 +160,7 @@ export function createGame(options: { seed?: number; stock?: Stock; resume?: Sna
     shoals: (lake?.grounds ?? []).map((grounds, i) => ({
       ...grounds,
       fish: [],
-      rise: RISE_MIN + scatter(i, 0, lake!.seed) * (RISE_MAX - RISE_MIN),
+      rise: mix(RISE_MIN, RISE_MAX, scatter(i, 0, lake!.seed)),
     })),
     time: options.resume?.time ?? 0,
     caughtFrom: null,
@@ -207,7 +210,7 @@ export function fishAt(state: GameState, shoal: number, id: number): Swimmer {
   if (!line?.fish || line.fish.shoal !== shoal || line.fish.id !== id || inTheAir(line)) return free;
   if (line.phase === "waiting") {
     const f = Math.min(1, line.t / line.wait);
-    return { ...lerp(free, line.target, f * f * (3 - 2 * f)), east: line.target.x > free.x };
+    return { ...lerp(free, line.target, smooth(f)), east: line.target.x > free.x };
   }
   return { ...(lurePosition(state) ?? line.target), east: state.boat.x > line.target.x };
 }
@@ -242,17 +245,17 @@ export function cast(state: GameState, target: Vec, rng: () => number): boolean 
   const near = nearestFish(state, landing);
   const roll = rng();
   if (near && near.distance <= LURE_REACH) {
-    const wait = FISH_WAIT_MIN + (FISH_WAIT_MAX - FISH_WAIT_MIN) * (0.7 * (near.distance / LURE_REACH) + 0.3 * roll);
+    const wait = mix(FISH_WAIT_MIN, FISH_WAIT_MAX, 0.7 * (near.distance / LURE_REACH) + 0.3 * roll);
     state.line = { phase: "winding", target: landing, t: 0, wait, fish: { shoal: near.shoal, id: near.id } };
   } else {
-    const wait = JUNK_WAIT_MIN + roll * (JUNK_WAIT_MAX - JUNK_WAIT_MIN);
+    const wait = mix(JUNK_WAIT_MIN, JUNK_WAIT_MAX, roll);
     state.line = { phase: "winding", target: landing, t: 0, wait, fish: null };
   }
   return true;
 }
 
 /** Whether the lure hasn't reached the water yet: the rod is swinging back, or the lure is flying. */
-export function inTheAir(line: Line): boolean {
+function inTheAir(line: Line): boolean {
   return line.phase === "winding" || line.phase === "flying";
 }
 
@@ -321,11 +324,6 @@ export function isActive(state: GameState): boolean {
   return state.dest !== null || state.line !== null || state.ripples.length > 0 || state.waves.length > 0;
 }
 
-/** Whether there are fish about: they drift on even when nothing else moves. */
-export function hasFish(state: GameState): boolean {
-  return state.shoals.some((shoal) => shoal.fish.length > 0);
-}
-
 /**
  * Which position the paddle is in: 0 at rest, then one further round for every
  * PADDLE_STEP paddled. The first stroke starts the moment the boat moves.
@@ -354,11 +352,6 @@ export function lurePosition(state: GameState): Vec | null {
   if (line.phase === "flying") return lerp(state.boat, line.target, Math.min(1, line.t / FLY_TIME));
   if (line.phase === "reeling") return lerp(line.target, state.boat, smooth(Math.min(1, line.t / REEL_TIME)));
   return { ...line.target };
-}
-
-/** Eases from 0 to 1: slow at both ends. */
-export function smooth(f: number): number {
-  return f * f * (3 - 2 * f);
 }
 
 export type Haul = { type: "catch"; item: Catch } | { type: "junk"; item: Junk; fishedOut: boolean };
@@ -485,17 +478,17 @@ function swim(state: GameState, dt: number): void {
     const moment = Math.floor(state.time * 1000);
     const id = shoal.fish[Math.floor(scatter(moment, s, seed) * shoal.fish.length)];
     addRipple(state, fishAt(state, s, id), 28, 1.3);
-    shoal.rise = RISE_MIN + scatter(moment, s + 64, seed) * (RISE_MAX - RISE_MIN);
+    shoal.rise = mix(RISE_MIN, RISE_MAX, scatter(moment, s + 64, seed));
   });
 }
 
 /** The middle of the hull of a boat at `p`. */
-function hull(p: Vec): Vec {
+export function hull(p: Vec): Vec {
   return { x: p.x, y: p.y + HULL_CENTRE_Y };
 }
 
 /** Where the boat is when the middle of its hull is at `h`. */
-function boatAt(h: Vec): Vec {
+export function boatAt(h: Vec): Vec {
   return { x: h.x, y: h.y - HULL_CENTRE_Y };
 }
 
@@ -541,8 +534,4 @@ function steer(state: GameState, from: Vec, to: Vec, dir: Vec): Vec {
 
 function addRipple(state: GameState, at: Vec, maxR: number, life: number, delay = 0): void {
   state.ripples.push({ x: at.x, y: at.y, age: -delay, life, maxR });
-}
-
-function lerp(a: Vec, b: Vec, f: number): Vec {
-  return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f };
 }

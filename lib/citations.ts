@@ -1,7 +1,7 @@
 /** Matches "[1]" and "[1, 3]". Shared by the server (which sources were cited) and the widget (links). */
 const CITATION = /\[(\d+(?:\s*,\s*\d+)*)\]/g;
 
-export type AnswerSegment = { type: "text"; text: string } | { type: "citation"; numbers: number[] };
+type AnswerSegment = { type: "text"; text: string } | { type: "citation"; numbers: number[] };
 
 /**
  * Source numbers cited in an answer, in order of first appearance. Accepts
@@ -16,6 +16,11 @@ export function extractCitations(answer: string, sourceCount: number): number[] 
     }
   }
   return cited;
+}
+
+/** Removes citation markers and the spaces before them: "Copenhagen [1]." becomes "Copenhagen.". */
+export function stripCitations(answer: string): string {
+  return answer.replace(new RegExp(`[ \\t]*${CITATION.source}`, "g"), "");
 }
 
 /** Splits an answer into plain text and citation markers, for rendering markers as links. */

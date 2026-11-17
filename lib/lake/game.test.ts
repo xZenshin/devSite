@@ -14,14 +14,14 @@ import {
   REEL_TIME,
   WAVE_LIFE,
   WIND_TIME,
-  HULL_CENTRE_Y,
   PADDLE_FRAMES,
   PADDLE_STEP,
+  boatAt,
   cast,
   castLanding,
   createGame,
   fishAt,
-  hasFish,
+  hull,
   isActive,
   lurePosition,
   moveTo,
@@ -33,21 +33,13 @@ import {
   snapshot,
   step,
   stockShoals,
-  type GameEvent,
   type GameState,
 } from "./game";
 import { SHOAL_SPREAD } from "./fish";
 import { BOAT_RADIUS, inReeds, intoWater, nearestObstruction, shoreDistance } from "./lake";
+import { DT, SEEDS, castAt, run } from "./test-utils";
 import { distance } from "./world";
 
-const DT = 1 / 60;
-
-/** Steps the game for a number of seconds and collects what happened. */
-function run(state: GameState, seconds: number, options = {}): GameEvent[] {
-  const events: GameEvent[] = [];
-  for (let t = 0; t < seconds; t += DT) events.push(...step(state, DT, options));
-  return events;
-}
 
 describe("sailing", () => {
   it("is still until told to move", () => {
@@ -201,12 +193,8 @@ describe("paddling", () => {
 });
 
 describe("the lake", () => {
-  const SEEDS = [1, 7, 42, 123_456_789];
-  const hullOf = (state: GameState) => ({ x: state.boat.x, y: state.boat.y + HULL_CENTRE_Y });
-  /** Where the boat must be for the middle of its hull to sit on `p`. */
-  const boatFor = (p: { x: number; y: number }) => ({ x: p.x, y: p.y - HULL_CENTRE_Y });
   /** How far the boat's hull is from running aground; negative when aground. */
-  const clearance = (state: GameState) => nearestObstruction(state.lake!, hullOf(state)).gap - BOAT_RADIUS;
+  const clearance = (state: GameState) => nearestObstruction(state.lake!, hull(state.boat)).gap - BOAT_RADIUS;
 
   /** Sails until the boat stops, checking every step that it stays afloat. */
   function sailChecked(state: GameState, seconds: number): number {
@@ -218,106 +206,94 @@ describe("the lake", () => {
     return lowest;
   }
 
-  it("starts with the boat afloat, moored off the end of the jetty", () => {
-    for (const seed of SEEDS) {
+  it.each(SEEDS)("starts with the boat afloat, moored off the end of the jetty (seed %i)", (seed) => {
+    const state = createGame({ seed });
+    expect(state.boat).toEqual({ x: 0, y: 0 });
+    expect(clearance(state)).toBeGreaterThan(0);
+    expect(distance(hull(state.boat), state.lake!.jetty.end)).toBeLessThan(BOAT_RADIUS + 60);
+  });
+
+  it.each(SEEDS)("stops at the shore when it is sent ashore, whichever way (seed %i)", (seed) => {
+    for (let i = 0; i < 12; i++) {
       const state = createGame({ seed });
-      expect(state.boat).toEqual({ x: 0, y: 0 });
-      expect(clearance(state)).toBeGreaterThan(0);
-      expect(distance(hullOf(state), state.lake!.jetty.end)).toBeLessThan(BOAT_RADIUS + 60);
+      const angle = (i / 12) * 2 * Math.PI;
+      moveTo(state, { x: Math.cos(angle) * 6000, y: Math.sin(angle) * 6000 });
+      const destHull = hull(state.dest!);
+      expect(nearestObstruction(state.lake!, destHull).gap).toBeGreaterThan(BOAT_RADIUS);
+      expect(sailChecked(state, 40)).toBeGreaterThan(-0.01);
+      expect(state.dest).toBeNull();
+      expect(shoreDistance(state.lake!, hull(state.boat))).toBeGreaterThan(BOAT_RADIUS - 0.01);
     }
   });
 
-  it("stops at the shore when it is sent ashore, whichever way", () => {
-    for (const seed of SEEDS) {
-      for (let i = 0; i < 12; i++) {
-        const state = createGame({ seed });
-        const angle = (i / 12) * 2 * Math.PI;
-        moveTo(state, { x: Math.cos(angle) * 6000, y: Math.sin(angle) * 6000 });
-        const destHull = { x: state.dest!.x, y: state.dest!.y + HULL_CENTRE_Y };
-        expect(nearestObstruction(state.lake!, destHull).gap).toBeGreaterThan(BOAT_RADIUS);
-        expect(sailChecked(state, 40)).toBeGreaterThan(-0.01);
-        expect(state.dest).toBeNull();
-        expect(shoreDistance(state.lake!, hullOf(state))).toBeGreaterThan(BOAT_RADIUS - 0.01);
-      }
-    }
+  it.each(SEEDS)("paddles out round the end of the jetty to a spot on its other side (seed %i)", (seed) => {
+    const state = createGame({ seed });
+    const west = boatAt({ x: -160, y: -330 });
+    moveTo(state, west);
+    expect(sailChecked(state, 20)).toBeGreaterThan(-0.01);
+    expect(distance(state.boat, west)).toBeLessThan(0.5);
+
+    const east = boatAt({ x: 160, y: -330 });
+    moveTo(state, east);
+    expect(sailChecked(state, 20)).toBeGreaterThan(-0.01);
+    expect(distance(state.boat, east)).toBeLessThan(0.5);
   });
 
-  it("paddles out round the end of the jetty to a spot on its other side", () => {
-    for (const seed of SEEDS) {
-      const state = createGame({ seed });
-      const west = boatFor({ x: -160, y: -330 });
-      moveTo(state, west);
+  it.each(SEEDS)("goes round a rock in its way and still arrives (seed %i)", (seed) => {
+    const state = createGame({ seed });
+    const lake = state.lake!;
+    for (const rock of lake.rocks) {
+      // Across the rock, along the shore rather than towards it.
+      const along = Math.atan2(rock.y - lake.centre.y, rock.x - lake.centre.x) + Math.PI / 2;
+      const side = (sign: number) =>
+        intoWater(
+          lake,
+          { x: rock.x + Math.cos(along) * 190 * sign, y: rock.y + Math.sin(along) * 190 * sign },
+          BOAT_RADIUS + 1,
+        );
+      const target = boatAt(side(1));
+      state.boat = boatAt(side(-1));
+      moveTo(state, target);
       expect(sailChecked(state, 20)).toBeGreaterThan(-0.01);
-      expect(distance(state.boat, west)).toBeLessThan(0.5);
-
-      const east = boatFor({ x: 160, y: -330 });
-      moveTo(state, east);
-      expect(sailChecked(state, 20)).toBeGreaterThan(-0.01);
-      expect(distance(state.boat, east)).toBeLessThan(0.5);
+      expect(distance(state.boat, target)).toBeLessThan(0.5);
     }
   });
 
-  it("goes round a rock in its way and still arrives", () => {
-    for (const seed of SEEDS) {
-      const state = createGame({ seed });
-      const lake = state.lake!;
-      for (const rock of lake.rocks) {
-        // Across the rock, along the shore rather than towards it.
-        const along = Math.atan2(rock.y - lake.centre.y, rock.x - lake.centre.x) + Math.PI / 2;
-        const side = (sign: number) =>
-          intoWater(
-            lake,
-            { x: rock.x + Math.cos(along) * 190 * sign, y: rock.y + Math.sin(along) * 190 * sign },
-            BOAT_RADIUS + 1,
-          );
-        const target = boatFor(side(1));
-        state.boat = boatFor(side(-1));
-        moveTo(state, target);
-        expect(sailChecked(state, 20)).toBeGreaterThan(-0.01);
-        expect(distance(state.boat, target)).toBeLessThan(0.5);
-      }
+  it.each(SEEDS)("is slowed by reeds, and picks up speed again beyond them (seed %i)", (seed) => {
+    const state = createGame({ seed });
+    const lake = state.lake!;
+    state.boat = boatAt(intoWater(lake, lake.reeds[0], BOAT_RADIUS + 1));
+    expect(inReeds(lake, hull(state.boat))).toBe(true);
+    moveTo(state, boatAt(lake.centre));
+    let amongReeds = 0;
+    let beyond = 0;
+    for (let t = 0; t < 4; t += DT) {
+      const among = inReeds(lake, hull(state.boat));
+      step(state, DT);
+      if (among) amongReeds = Math.max(amongReeds, state.speed);
+      else beyond = Math.max(beyond, state.speed);
     }
+    expect(amongReeds).toBeGreaterThan(0);
+    expect(amongReeds).toBeLessThanOrEqual(BOAT_SPEED * REED_DRAG + 1e-6);
+    expect(beyond).toBeGreaterThan(BOAT_SPEED * 0.9);
   });
 
-  it("is slowed by reeds, and picks up speed again beyond them", () => {
-    for (const seed of SEEDS) {
-      const state = createGame({ seed });
-      const lake = state.lake!;
-      state.boat = boatFor(intoWater(lake, lake.reeds[0], BOAT_RADIUS + 1));
-      expect(inReeds(lake, hullOf(state))).toBe(true);
-      moveTo(state, boatFor(lake.centre));
-      let amongReeds = 0;
-      let beyond = 0;
-      for (let t = 0; t < 4; t += DT) {
-        const among = inReeds(lake, hullOf(state));
-        step(state, DT);
-        if (among) amongReeds = Math.max(amongReeds, state.speed);
-        else beyond = Math.max(beyond, state.speed);
-      }
-      expect(amongReeds).toBeGreaterThan(0);
-      expect(amongReeds).toBeLessThanOrEqual(BOAT_SPEED * REED_DRAG + 1e-6);
-      expect(beyond).toBeGreaterThan(BOAT_SPEED * 0.9);
-    }
-  });
+  it.each(SEEDS)("lands a lure thrown at the jetty or the shore in the water beside it (seed %i)", (seed) => {
+    const state = createGame({ seed });
+    const lake = state.lake!;
+    const onDeck = { x: 0, y: -300 };
+    expect(nearestObstruction(lake, onDeck).gap).toBeLessThan(0);
+    const besideDeck = castLanding(state, onDeck);
+    expect(nearestObstruction(lake, besideDeck).gap).toBeGreaterThan(7.99);
+    expect(distance(besideDeck, onDeck)).toBeLessThan(40);
 
-  it("lands a lure thrown at the jetty or the shore in the water beside it", () => {
-    for (const seed of SEEDS) {
-      const state = createGame({ seed });
-      const lake = state.lake!;
-      const onDeck = { x: 0, y: -300 };
-      expect(nearestObstruction(lake, onDeck).gap).toBeLessThan(0);
-      const besideDeck = castLanding(state, onDeck);
-      expect(nearestObstruction(lake, besideDeck).gap).toBeGreaterThan(7.99);
-      expect(distance(besideDeck, onDeck)).toBeLessThan(40);
-
-      state.boat = { x: 220, y: -300 };
-      const ashore = { x: 220, y: -640 };
-      expect(shoreDistance(lake, ashore)).toBeLessThan(0);
-      const offShore = castLanding(state, ashore);
-      expect(shoreDistance(lake, offShore)).toBeGreaterThan(7.99);
-      cast(state, ashore, () => 0);
-      expect(state.line?.target).toEqual(offShore);
-    }
+    state.boat = { x: 220, y: -300 };
+    const ashore = { x: 220, y: -640 };
+    expect(shoreDistance(lake, ashore)).toBeLessThan(0);
+    const offShore = castLanding(state, ashore);
+    expect(shoreDistance(lake, offShore)).toBeGreaterThan(7.99);
+    cast(state, ashore, () => 0);
+    expect(state.line?.target).toEqual(offShore);
   });
 
   it("is open water without end when there is no seed", () => {
@@ -339,7 +315,6 @@ describe("fish", () => {
     const state = createGame({ seed: SEED, stock: [3, 2, 1] });
     expect(state.shoals.map((shoal) => shoal.home)).toEqual(state.lake!.grounds.map((grounds) => grounds.home));
     expect(state.shoals.map((shoal) => shoal.fish.length)).toEqual([3, 2, 1]);
-    expect(hasFish(state)).toBe(true);
   });
 
   it("thins and refills the shoals as what is left to catch changes", () => {
@@ -347,13 +322,12 @@ describe("fish", () => {
     stockShoals(state, [1, 0, 2]);
     expect(state.shoals.map((shoal) => shoal.fish.length)).toEqual([1, 0, 2]);
     stockShoals(state, []);
-    expect(hasFish(state)).toBe(false);
+    expect(state.shoals.map((shoal) => shoal.fish.length)).toEqual([0, 0, 0]);
   });
 
   it("has no fish in open water", () => {
     const state = createGame({ stock: [3] });
     expect(state.shoals).toEqual([]);
-    expect(hasFish(state)).toBe(false);
     expect(nearestFish(state, { x: 0, y: 0 })).toBeNull();
   });
 
@@ -454,12 +428,10 @@ describe("fish", () => {
 
 describe("casting", () => {
   it("throws to the target in range and to full range beyond it", () => {
-    const near = createGame();
-    cast(near, { x: 100, y: 50 }, () => 0);
+    const near = castAt({ x: 100, y: 50 });
     expect(near.line?.target).toEqual({ x: 100, y: 50 });
 
-    const far = createGame();
-    cast(far, { x: 5000, y: 0 }, () => 0);
+    const far = castAt({ x: 5000, y: 0 });
     expect(far.line?.target.x).toBeCloseTo(CAST_RANGE);
   });
 
@@ -483,8 +455,7 @@ describe("casting", () => {
   }
 
   it("swings the rod back before the lure flies", () => {
-    const state = createGame();
-    cast(state, { x: 200, y: 0 }, () => 0);
+    const state = castAt({ x: 200, y: 0 });
     expect(state.line?.phase).toBe("winding");
     expect(run(state, WIND_TIME - 0.05)).toEqual([]);
     expect(state.line?.phase).toBe("winding");
@@ -506,25 +477,21 @@ describe("casting", () => {
   });
 
   it("waits for junk between the shortest and the longest time, depending on the roll", () => {
-    const quick = createGame();
-    cast(quick, { x: 200, y: 0 }, () => 0);
+    const quick = castAt({ x: 200, y: 0 });
     expect(quick.line?.wait).toBe(JUNK_WAIT_MIN);
-    const slow = createGame();
-    cast(slow, { x: 200, y: 0 }, () => 0.999);
+    const slow = castAt({ x: 200, y: 0 }, 0.999);
     expect(slow.line?.wait).toBeGreaterThan(JUNK_WAIT_MAX - 0.01);
     expect(slow.line?.wait).toBeLessThan(JUNK_WAIT_MAX);
   });
 
   it("ignores a second cast while the line is out", () => {
-    const state = createGame();
-    cast(state, { x: 200, y: 0 }, () => 0);
+    const state = castAt({ x: 200, y: 0 });
     expect(cast(state, { x: -200, y: 0 }, () => 0)).toBe(false);
     expect(state.line?.target).toEqual({ x: 200, y: 0 });
   });
 
   it("brings the line back empty when the boat is sent somewhere", () => {
-    const state = createGame();
-    cast(state, { x: 200, y: 0 }, () => 0);
+    const state = castAt({ x: 200, y: 0 });
     run(state, FLY_TIME + 0.5);
     moveTo(state, { x: -300, y: 0 });
     expect(state.line).toBeNull();
@@ -538,8 +505,7 @@ describe("casting", () => {
     expect(events).toEqual(["landed", "bite", "caught"]);
     expect(state.ripples).toEqual([]);
 
-    const junk = createGame();
-    cast(junk, { x: 200, y: 0 }, () => 0);
+    const junk = castAt({ x: 200, y: 0 });
     expect(run(junk, JUNK_WAIT_MIN + BITE_TIME + 0.2, { reducedMotion: true })).toEqual(["landed", "bite", "caught"]);
   });
 });
@@ -562,8 +528,7 @@ describe("lurePosition", () => {
   });
 
   it("comes back to the boat while reeling", () => {
-    const state = createGame();
-    cast(state, { x: 200, y: 0 }, () => 0);
+    const state = castAt({ x: 200, y: 0 });
     run(state, WIND_TIME + FLY_TIME + JUNK_WAIT_MIN + BITE_TIME + REEL_TIME * 0.9);
     expect(state.line?.phase).toBe("reeling");
     expect(lurePosition(state)!.x).toBeLessThan(30);

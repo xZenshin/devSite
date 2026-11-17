@@ -1,4 +1,5 @@
-import { FLY_TIME, REEL_TIME, WIND_TIME, smooth, type GameState, type Line } from "./game";
+import { FLY_TIME, REEL_TIME, WIND_TIME, type GameState, type Line } from "./game";
+import { clamp, lerp, smooth } from "./math";
 import { lineChar } from "./sprites";
 import { project, type Vec } from "./world";
 
@@ -32,8 +33,7 @@ const PIECES = 16;
 /** The bobber ducks under and comes back up this often while a fish bites, in seconds. */
 const BOB_UNDER = 0.12;
 
-const lerp = (a: Vec, b: Vec, f: number): Vec => ({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f });
-const easeOut = (f: number) => 1 - (1 - Math.min(1, Math.max(0, f))) ** 3;
+const easeOut = (f: number) => 1 - (1 - clamp(f)) ** 3;
 
 /** Whether the bobber is under the water just now, while a fish bites. The rod tip dips with it. */
 export function bobberUnder(line: Line): boolean {

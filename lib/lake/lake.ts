@@ -1,3 +1,4 @@
+import { clamp, mix, smooth } from "./math";
 import { distance, patchiness, type Vec } from "./world";
 
 /**
@@ -70,17 +71,17 @@ const DEEP_AT = 460;
 const BANK_SIZE = 360;
 
 /** How much room the buoy that marks a fishing ground takes up. */
-export const BUOY_RADIUS = 10;
+const BUOY_RADIUS = 10;
 
 /** How many fishing grounds the lake has. The first is in sight of the jetty. */
 export const GROUNDS = 3;
 
-export interface Disc extends Vec {
+interface Disc extends Vec {
   r: number;
 }
 
 /** A stretch of water where a shoal of fish keeps to, marked by a buoy at its middle. */
-export interface Grounds {
+interface Grounds {
   home: Vec;
 }
 
@@ -107,7 +108,7 @@ export interface Lake {
 }
 
 /** Something in the boat's way. */
-export interface Obstruction {
+interface Obstruction {
   what: "shore" | "jetty" | "rock" | "buoy";
   /** How much clear water lies before it; negative inside it. */
   gap: number;
@@ -133,6 +134,12 @@ export function shoreRadius(lake: Pick<Lake, "wobble">, angle: number): number {
   return LAKE_RADIUS * share;
 }
 
+/** The point `out` from the shore towards the lake's middle, in the direction `angle` from it; negative `out` is up the land. */
+export function offShore(lake: Pick<Lake, "centre" | "wobble">, angle: number, out: number): Vec {
+  const r = shoreRadius(lake, angle) - out;
+  return { x: lake.centre.x + Math.cos(angle) * r, y: lake.centre.y + Math.sin(angle) * r };
+}
+
 /** How far out on the water a point is, measured from the shore; negative on land. */
 export function shoreDistance(lake: Lake, p: Vec): number {
   const dx = p.x - lake.centre.x;
@@ -148,8 +155,7 @@ export function depth(lake: Lake, p: Vec): number {
   const out = shoreDistance(lake, p);
   if (out <= 0) return 0;
   const bank = patchiness(p.x / BANK_SIZE, p.y / BANK_SIZE, lake.seed);
-  const bed = Math.min(1, Math.max(0, (bank - 0.3) / 0.4));
-  return Math.min(1, out / DEEP_AT) * (0.35 + 0.65 * bed * bed * (3 - 2 * bed));
+  return Math.min(1, out / DEEP_AT) * (0.35 + 0.65 * smooth(clamp((bank - 0.3) / 0.4)));
 }
 
 /** The point of the jetty's centre line nearest to `p`. */
@@ -157,7 +163,7 @@ function alongJetty(lake: Lake, p: Vec): Vec {
   const { shore, end } = lake.jetty;
   const dx = end.x - shore.x;
   const dy = end.y - shore.y;
-  const f = Math.min(1, Math.max(0, ((p.x - shore.x) * dx + (p.y - shore.y) * dy) / (dx * dx + dy * dy)));
+  const f = clamp(((p.x - shore.x) * dx + (p.y - shore.y) * dy) / (dx * dx + dy * dy));
   return { x: shore.x + dx * f, y: shore.y + dy * f };
 }
 
@@ -235,7 +241,7 @@ export function intoWater(lake: Lake, p: Vec, room: number): Vec {
 /** The lake that follows from a seed. */
 export function createLake(seed: number): Lake {
   const next = sequence(seed);
-  const between = (low: number, high: number) => low + next() * (high - low);
+  const between = (low: number, high: number) => mix(low, high, next());
 
   const wobble = LOBES.map(([lobes, share]) => ({
     lobes,
@@ -312,8 +318,7 @@ export function createLake(seed: number): Lake {
   for (let i = 0; i < beds; i++) {
     const angle = NORTH + ((i + 0.5 + between(-0.3, 0.3)) / beds) * 2 * Math.PI;
     if (Math.abs(Math.atan2(Math.sin(angle - NORTH), Math.cos(angle - NORTH))) < 0.3) continue;
-    const out = shoreRadius(lake, angle) - between(10, 60);
-    reeds.push({ x: centre.x + Math.cos(angle) * out, y: centre.y + Math.sin(angle) * out, r: between(80, 140) });
+    reeds.push({ ...offShore(lake, angle, between(10, 60)), r: between(80, 140) });
   }
 
   const lilies: Disc[] = [];
@@ -330,40 +335,29 @@ export function createLake(seed: number): Lake {
 
   return {
     ...lake,
-    lighthouse: placeAshore(lake, -LIGHTHOUSE_WEST, LIGHTHOUSE_HALF_WIDTH, LIGHTHOUSE_FOOTING),
+    // The lighthouse's foot: both sides of it clear of the water.
+    lighthouse: placeOnShore(lake, {
+      from: NORTH,
+      x: -LIGHTHOUSE_WEST,
+      edge: [-LIGHTHOUSE_HALF_WIDTH, LIGHTHOUSE_HALF_WIDTH].map((dx) => ({ x: dx, y: 0 })),
+      footing: LIGHTHOUSE_FOOTING,
+      inset: [LIGHTHOUSE_FOOTING, 400],
+    }),
     house: upTheLand(lake, { x: HOUSE_EAST, y: lake.jetty.shore.y - HOUSE_INLAND }, HOUSE_HALF_WIDTH, HOUSE_FOOTING),
-    camp: placeSouth(lake, CAMP_EAST, CAMP_HALF_WIDTH, CAMP_HEIGHT, CAMP_FOOTING),
+    // The camp stands up the screen, towards the lake, so its top edge comes nearest the water: both
+    // corners, and the middle, in case the shore bulges between them.
+    camp: placeOnShore(lake, {
+      from: SOUTH,
+      x: CAMP_EAST,
+      edge: [-CAMP_HALF_WIDTH, 0, CAMP_HALF_WIDTH].map((dx) => ({ x: dx, y: -CAMP_HEIGHT })),
+      footing: CAMP_FOOTING,
+      inset: [0, 1000],
+    }),
     grounds,
     rocks,
     reeds,
     lilies,
   };
-}
-
-/**
- * Where something stands on the land beyond the near (south) shore: round from
- * due south, east for a positive `x` and west for a negative one, until the
- * shore is that far along; then far enough south, away from the water, that
- * the top edge of something `height` tall and `halfWidth` either side of the
- * middle is at least `footing` from the water. It stands up the screen, towards
- * the lake, so its top is what comes nearest the water.
- */
-function placeSouth(lake: Lake, x: number, halfWidth: number, height: number, footing: number): Vec {
-  const along = (angle: number, out: number): Vec => ({
-    x: lake.centre.x + Math.cos(angle) * out,
-    y: lake.centre.y + Math.sin(angle) * out,
-  });
-  const way = Math.sign(x);
-  let angle = SOUTH;
-  while (Math.abs(angle - SOUTH) < Math.PI / 2 && along(angle, shoreRadius(lake, angle)).x * way < Math.abs(x)) {
-    angle -= way * 0.01;
-  }
-  for (let inset = 0; ; inset += 4) {
-    const foot = along(angle, shoreRadius(lake, angle) + inset);
-    // Its top edge: both corners, and the middle, in case the shore bulges between them.
-    const edge = [-halfWidth, 0, halfWidth].map((dx) => ({ x: foot.x + dx, y: foot.y - height }));
-    if (inset > 1000 || edge.every((point) => shoreDistance(lake, point) < -footing)) return foot;
-  }
 }
 
 /**
@@ -379,25 +373,26 @@ function upTheLand(lake: Lake, foot: Vec, halfWidth: number, footing: number): V
 }
 
 /**
- * Where something stands on the far shore: round from the jetty, east for a
- * positive `x` and west for a negative one, until the shore is that far along;
- * and far enough up the beach that both sides of its foot, `halfWidth` either
- * side of the middle, are at least `footing` from the water, however the shore
- * slopes there.
+ * Where something stands on the land round the shore: round from due north
+ * (`from` NORTH) or due south (SOUTH), east for a positive `x` and west for a
+ * negative one, until the shore is that far along. Then up the land, starting
+ * `inset[0]` from the water and giving up at `inset[1]`, until every point of
+ * its `edge` (offsets from its foot) is at least `footing` from the water,
+ * however the shore runs there.
  */
-function placeAshore(lake: Lake, x: number, halfWidth: number, footing: number): Vec {
-  const along = (angle: number, out: number): Vec => ({
-    x: lake.centre.x + Math.cos(angle) * out,
-    y: lake.centre.y + Math.sin(angle) * out,
-  });
+function placeOnShore(
+  lake: Lake,
+  options: { from: number; x: number; edge: readonly Vec[]; footing: number; inset: readonly [number, number] },
+): Vec {
+  const { from, x, edge, footing, inset } = options;
   const way = Math.sign(x);
-  let angle = NORTH;
-  while (Math.abs(angle - NORTH) < Math.PI / 2 && along(angle, shoreRadius(lake, angle)).x * way < Math.abs(x)) {
-    angle += way * 0.01;
-  }
-  for (let inset = footing; ; inset += 4) {
-    const foot = along(angle, shoreRadius(lake, angle) + inset);
-    const sides = [-halfWidth, halfWidth].map((dx) => ({ x: foot.x + dx, y: foot.y }));
-    if (inset > 400 || sides.every((side) => shoreDistance(lake, side) < -footing)) return foot;
+  // Eastward is clockwise from the north (angles grow towards the east), anticlockwise from the south.
+  const turn = from === NORTH ? way * 0.01 : -way * 0.01;
+  let angle = from;
+  while (Math.abs(angle - from) < Math.PI / 2 && offShore(lake, angle, 0).x * way < Math.abs(x)) angle += turn;
+  for (let up = inset[0]; ; up += 4) {
+    const foot = offShore(lake, angle, -up);
+    const clear = edge.every((d) => shoreDistance(lake, { x: foot.x + d.x, y: foot.y + d.y }) < -footing);
+    if (up > inset[1] || clear) return foot;
   }
 }

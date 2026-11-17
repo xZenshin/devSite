@@ -13,6 +13,7 @@ import {
 } from "@/lib/lake/birds";
 import { bobberUnder, linePath, lureOnScreen, rod, traceLine } from "@/lib/lake/cast";
 import { fishShape } from "@/lib/lake/fish";
+import { mix } from "@/lib/lake/math";
 import { alertShake, createMoose, mooseDrawing, mooseMoving, stepMoose } from "@/lib/lake/moose";
 import {
   WAVE_LIFE,
@@ -149,7 +150,7 @@ export function LakeCanvas(props: LakeCanvasProps) {
     let flight: Flight | null = null;
     // The moose by the east shore, on a lake that has one.
     const moose = state.lake ? createMoose(state.lake, Math.random) : null;
-    let nextFlight = state.time + FIRST_FLIGHT_MIN + Math.random() * (FIRST_FLIGHT_MAX - FIRST_FLIGHT_MIN);
+    let nextFlight = state.time + mix(FIRST_FLIGHT_MIN, FIRST_FLIGHT_MAX, Math.random());
 
     // The lake's texture, kept per square of cells: it never changes, so it is only worked out once.
     // With it, what each cell is and, for water, how far it is from the shore.
@@ -181,6 +182,21 @@ export function LakeCanvas(props: LakeCanvasProps) {
       tones[r * cols + c] = tone;
     };
     const cellOf = (p: Vec) => ({ col: Math.floor(p.x / cellW), row: Math.floor(p.y / cellH) });
+    /**
+     * Draws a row of a drawing at exact screen positions rather than in cells, its first character's
+     * middle at `x0`. The row is solid from its first character to its last: what is behind is cleared,
+     * so the woods or the water don't show through. Rows wholly off screen are skipped.
+     */
+    const drawRow = (text: string, x0: number, y: number, color: string) => {
+      const first = text.search(/\S/);
+      if (first < 0) return;
+      const last = text.trimEnd().length - 1;
+      const x = (i: number) => x0 + i * cellW;
+      if (x(last) < -cellW || x(first) > width + cellW || y < -cellH || y > height + cellH) return;
+      ctx!.clearRect(x(first) - cellW / 2, y - cellH / 2, (last - first + 1) * cellW, cellH);
+      ctx!.fillStyle = color;
+      for (let i = first; i <= last; i++) if (text[i] !== " ") ctx!.fillText(text[i], x(i), y);
+    };
     const toWorld = (clientX: number, clientY: number) => unproject({ x: clientX + camera.x, y: clientY + camera.y });
 
     function measure() {
@@ -388,65 +404,38 @@ export function LakeCanvas(props: LakeCanvasProps) {
         }
       }
 
-      // Smoke rises from the house's chimney, at its exact positions so it rises smoothly. Each puff
-      // clears what is behind it, from its first character to its last, so the woods don't show through.
+      // Smoke rises from the house's chimney, at its exact positions so it rises smoothly.
       if (state.lake) {
         const top = standing(HOUSE, state.lake.house, cellW, cellH);
         const chimneyX = (top.col + CHIMNEY.col + 0.5) * cellW - camera.x;
         const chimneyY = (top.row + CHIMNEY.row + 0.5) * cellH - camera.y;
         for (const puff of smokeAt(seed, state.time)) {
-          const first = puff.chars.search(/\S/);
-          const last = puff.chars.trimEnd().length - 1;
-          const x = (i: number) => chimneyX + (puff.x + i - (puff.chars.length - 1) / 2) * cellW;
-          const y = chimneyY + puff.y * cellH;
-          if (x(last) < -cellW || x(first) > width + cellW || y < -cellH || y > height + cellH) continue;
-          ctx!.clearRect(x(first) - cellW / 2, y - cellH / 2, (last - first + 1) * cellW, cellH);
-          ctx!.fillStyle = colors[puff.tone];
-          for (let i = first; i <= last; i++) {
-            if (puff.chars[i] !== " ") ctx!.fillText(puff.chars[i], x(i), y);
-          }
+          const x0 = chimneyX + (puff.x - (puff.chars.length - 1) / 2) * cellW;
+          drawRow(puff.chars, x0, chimneyY + puff.y * cellH, colors[puff.tone]);
         }
       }
 
-      // The moose, at its exact position so it moves smoothly, its feet on its spot. Each row is solid from
-      // its first character to its last, like the boat's, so the woods don't show through it. The `[!]` is bright.
+      // The moose, at its exact position so it moves smoothly, its feet on its spot. The `[!]` is bright.
       if (moose) {
         const { rows: drawing, feet } = mooseDrawing(moose);
         const at = project(moose.at);
         // The `[!]` on the top row shakes a little from side to side as it appears.
         const shake = alertShake(moose, reducedMotion);
-        for (let r = 0; r < drawing.length; r++) {
-          const first = drawing[r].search(/\S/);
-          if (first < 0) continue;
-          const last = drawing[r].trimEnd().length - 1;
-          const x = (c: number) => at.x - camera.x + (c - feet) * cellW + (r === 0 ? shake : 0);
-          const y = at.y - camera.y + (r - (drawing.length - 1)) * cellH;
-          if (x(last) < -cellW || x(first) > width + cellW || y < -cellH || y > height + cellH) continue;
-          ctx!.clearRect(x(first) - cellW / 2, y - cellH / 2, (last - first + 1) * cellW, cellH);
-          ctx!.fillStyle = colors[r === 0 ? BONE : ASH];
-          for (let c = first; c <= last; c++) if (drawing[r][c] !== " ") ctx!.fillText(drawing[r][c], x(c), y);
-        }
+        drawing.forEach((row, r) => {
+          const x0 = at.x - camera.x - feet * cellW + (r === 0 ? shake : 0);
+          drawRow(row, x0, at.y - camera.y + (r - (drawing.length - 1)) * cellH, colors[r === 0 ? BONE : ASH]);
+        });
       }
 
-      // The boat sits on top of the water at its exact position, not snapped to a cell. Each row is
-      // solid from its first to its last character, so nothing shows through the hull.
+      // The boat sits on top of the water at its exact position, not snapped to a cell.
       // While a line is out the paddle is stowed, so the rod stands clear of it.
       const sprite = state.line ? ANGLER_SPRITES[state.heading] : BOAT_SPRITES[state.heading][paddleFrame(state)];
       const bx = boat.x - camera.x;
       // The kayak rides the water, rising and falling a little.
       const by = boat.y - camera.y + Math.sin(state.time * BOB_RATE) * BOB;
-      ctx!.fillStyle = colors[BONE];
-      for (let r = 0; r < sprite.length; r++) {
-        const y = by + (r - (sprite.length - 1)) * cellH;
-        const first = sprite[r].search(/\S/);
-        if (first < 0) continue;
-        const last = sprite[r].trimEnd().length - 1;
-        const x = (c: number) => bx + (c - (sprite[r].length - 1) / 2) * cellW;
-        ctx!.clearRect(x(first) - cellW / 2, y - cellH / 2, (last - first + 1) * cellW, cellH);
-        for (let c = first; c <= last; c++) {
-          if (sprite[r][c] !== " ") ctx!.fillText(sprite[r][c], x(c), y);
-        }
-      }
+      sprite.forEach((row, r) => {
+        drawRow(row, bx - ((row.length - 1) / 2) * cellW, by + (r - (sprite.length - 1)) * cellH, colors[BONE]);
+      });
 
       // The rod, while a line is out: drawn over the boat, which it moves with, in short strokes along its
       // length. Nothing is cleared beneath it, so swung back over the shoulder it passes the head without hiding it.
@@ -454,6 +443,7 @@ export function LakeCanvas(props: LakeCanvasProps) {
       if (held) {
         const char = lineChar(held.tip.x - held.butt.x, held.tip.y - held.butt.y);
         const dy = by - (boat.y - camera.y);
+        ctx!.fillStyle = colors[BONE];
         for (let k = 1; k <= ROD_STROKES; k++) {
           const px = held.butt.x + ((held.tip.x - held.butt.x) * k) / ROD_STROKES - camera.x;
           const py = held.butt.y + ((held.tip.y - held.butt.y) * k) / ROD_STROKES - camera.y + dy;
@@ -491,7 +481,7 @@ export function LakeCanvas(props: LakeCanvasProps) {
       }
       if (flight && flightOver(flight, state.time, view)) {
         flight = null;
-        nextFlight = state.time + FLIGHT_GAP_MIN + Math.random() * (FLIGHT_GAP_MAX - FLIGHT_GAP_MIN);
+        nextFlight = state.time + mix(FLIGHT_GAP_MIN, FLIGHT_GAP_MAX, Math.random());
       }
       return flight !== null;
     }

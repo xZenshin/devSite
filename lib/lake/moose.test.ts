@@ -11,10 +11,9 @@ import {
   type Moose,
 } from "./moose";
 import { MOOSE, MOOSE_FEET } from "./sprites";
+import { DT, SEEDS } from "./test-utils";
 import { distance, type Vec } from "./world";
 
-const DT = 1 / 60;
-const SEEDS = [1, 7, 42];
 
 /** Numbers in [0, 1) that follow from a seed, one after another. */
 function numbers(seed: number) {
@@ -39,16 +38,14 @@ function run(moose: Moose, lake: Lake, boat: Vec, seconds: number, rng: () => nu
 const FAR = { x: 0, y: 0 };
 
 describe("the moose", () => {
-  it("lives on the land by the east shore, a little way up from the water, facing the lake", () => {
-    for (const seed of SEEDS) {
-      const lake = createLake(seed);
-      const moose = createMoose(lake, numbers(seed));
-      expect(moose.at.x).toBeGreaterThan(lake.centre.x + 800);
-      const ashore = -shoreDistance(lake, moose.at);
-      expect(ashore).toBeGreaterThan(70);
-      expect(ashore).toBeLessThan(125);
-      expect(moose.facing).toBe(-1);
-    }
+  it.each(SEEDS)("lives on the land by the east shore, a little way up from the water, facing the lake (seed %i)", (seed) => {
+    const lake = createLake(seed);
+    const moose = createMoose(lake, numbers(seed));
+    expect(moose.at.x).toBeGreaterThan(lake.centre.x + 800);
+    const ashore = -shoreDistance(lake, moose.at);
+    expect(ashore).toBeGreaterThan(70);
+    expect(ashore).toBeLessThan(125);
+    expect(moose.facing).toBe(-1);
   });
 
   it("left alone, stays where it is, twitching now and then and bowing its head to graze", () => {
@@ -61,47 +58,43 @@ describe("the moose", () => {
     expect([...seen].every((s) => s.startsWith("idle"))).toBe(true);
   });
 
-  it("looks up with a [!] when the boat comes close, then runs off away from the lake", () => {
-    for (const seed of SEEDS) {
-      const lake = createLake(seed);
-      const moose = createMoose(lake, numbers(seed));
-      const start = { ...moose.at };
-      // The boat comes up the water just off the moose's spot.
-      const boat = { x: start.x - ALERT_RADIUS + 60, y: start.y };
-      run(moose, lake, boat, DT * 2, numbers(1));
-      expect(moose.mode).toBe("alert");
-      expect(mooseDrawing(moose).rows[0].trim()).toBe("[!]");
-      // It stares for a moment, then runs.
-      run(moose, lake, boat, ALERT_TIME, numbers(1));
-      expect(moose.mode).toBe("flee");
-      expect(mooseMoving(moose)).toBe(true);
-      run(moose, lake, boat, 0.5, numbers(1));
-      // Further up the land, and further from the boat.
-      expect(shoreDistance(lake, moose.at)).toBeLessThan(shoreDistance(lake, start) - 60);
-      expect(distance(moose.at, boat)).toBeGreaterThan(distance(start, boat));
-    }
+  it.each(SEEDS)("looks up with a [!] when the boat comes close, then runs off away from the lake (seed %i)", (seed) => {
+    const lake = createLake(seed);
+    const moose = createMoose(lake, numbers(seed));
+    const start = { ...moose.at };
+    // The boat comes up the water just off the moose's spot.
+    const boat = { x: start.x - ALERT_RADIUS + 60, y: start.y };
+    run(moose, lake, boat, DT * 2, numbers(1));
+    expect(moose.mode).toBe("alert");
+    expect(mooseDrawing(moose).rows[0].trim()).toBe("[!]");
+    // It stares for a moment, then runs.
+    run(moose, lake, boat, ALERT_TIME, numbers(1));
+    expect(moose.mode).toBe("flee");
+    expect(mooseMoving(moose)).toBe(true);
+    run(moose, lake, boat, 0.5, numbers(1));
+    // Further up the land, and further from the boat.
+    expect(shoreDistance(lake, moose.at)).toBeLessThan(shoreDistance(lake, start) - 60);
+    expect(distance(moose.at, boat)).toBeGreaterThan(distance(start, boat));
   });
 
-  it("stops, then walks back down to a new spot by the water, and grazes there again", () => {
-    for (const seed of SEEDS) {
-      const lake = createLake(seed);
-      const moose = createMoose(lake, numbers(seed));
-      const start = { ...moose.at };
-      const boat = { x: start.x - 200, y: start.y };
-      run(moose, lake, boat, ALERT_TIME + 0.1, numbers(2));
-      // The boat sails off; the moose runs to its refuge, pauses, and walks back.
-      const seen = run(moose, lake, FAR, 30, numbers(2));
-      expect(seen).toContain("pause:");
-      expect(seen).toContain("return:");
-      expect(moose.mode).toBe("idle");
-      const ashore = -shoreDistance(lake, moose.at);
-      expect(ashore).toBeGreaterThan(70);
-      expect(ashore).toBeLessThan(125);
-      expect(moose.at).not.toEqual(start);
-      // On the east side still, facing the lake.
-      expect(moose.at.x).toBeGreaterThan(lake.centre.x + 800);
-      expect(moose.facing).toBe(-1);
-    }
+  it.each(SEEDS)("stops, then walks back down to a new spot by the water, and grazes there again (seed %i)", (seed) => {
+    const lake = createLake(seed);
+    const moose = createMoose(lake, numbers(seed));
+    const start = { ...moose.at };
+    const boat = { x: start.x - 200, y: start.y };
+    run(moose, lake, boat, ALERT_TIME + 0.1, numbers(2));
+    // The boat sails off; the moose runs to its refuge, pauses, and walks back.
+    const seen = run(moose, lake, FAR, 30, numbers(2));
+    expect(seen).toContain("pause:");
+    expect(seen).toContain("return:");
+    expect(moose.mode).toBe("idle");
+    const ashore = -shoreDistance(lake, moose.at);
+    expect(ashore).toBeGreaterThan(70);
+    expect(ashore).toBeLessThan(125);
+    expect(moose.at).not.toEqual(start);
+    // On the east side still, facing the lake.
+    expect(moose.at.x).toBeGreaterThan(lake.centre.x + 800);
+    expect(moose.facing).toBe(-1);
   });
 
   it("is startled again if the boat comes close on its way back", () => {

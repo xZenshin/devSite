@@ -1,3 +1,5 @@
+import { smooth } from "./math";
+
 /**
  * The lake's geometry. The world is a flat plane measured in pixels; the camera
  * looks down at a tilt, so the far-near axis (y) is drawn at half length and a
@@ -62,8 +64,8 @@ export function patchiness(x: number, y: number, salt = 0): number {
   const y0 = Math.floor(y);
   const fx = x - x0;
   const fy = y - y0;
-  const sx = fx * fx * (3 - 2 * fx);
-  const sy = fy * fy * (3 - 2 * fy);
+  const sx = smooth(fx);
+  const sy = smooth(fy);
   const top = scatter(x0, y0, salt) * (1 - sx) + scatter(x0 + 1, y0, salt) * sx;
   const bottom = scatter(x0, y0 + 1, salt) * (1 - sx) + scatter(x0 + 1, y0 + 1, salt) * sx;
   return top * (1 - sy) + bottom * sy;

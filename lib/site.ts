@@ -3,7 +3,7 @@ import { cacheLife } from "next/cache";
 import { loadContent, type Contact, type PageMeta, type ProjectImage, type Section } from "./content";
 import { readImageSize } from "./image-size";
 
-export interface PageSection extends Section {
+interface PageSection extends Section {
   /** The heading's anchor; the same one citations link to. */
   anchor: string;
 }

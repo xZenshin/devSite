@@ -8,23 +8,12 @@ import {
   WIND_TIME,
   cast,
   createGame,
-  step,
-  type GameState,
 } from "./game";
+import { DT, castAt, run } from "./test-utils";
 import { distance, project } from "./world";
 
-const DT = 1 / 60;
-
-function run(state: GameState, seconds: number, options = {}): void {
-  for (let t = 0; t < seconds; t += DT) step(state, DT, options);
-}
-
 /** A game with the lure thrown 300 to the right of the boat. */
-function castRight(): GameState {
-  const state = createGame();
-  cast(state, { x: 300, y: 0 }, () => 0);
-  return state;
-}
+const castRight = () => castAt({ x: 300, y: 0 });
 
 describe("rod", () => {
   it("is only out while the line is", () => {
@@ -58,8 +47,7 @@ describe("rod", () => {
   });
 
   it("points the other way for a throw to the left", () => {
-    const state = createGame();
-    cast(state, { x: -300, y: 0 }, () => 0);
+    const state = castAt({ x: -300, y: 0 });
     run(state, WIND_TIME + FLY_TIME);
     const { butt, tip } = rod(state)!;
     expect(tip.x).toBeLessThan(butt.x);

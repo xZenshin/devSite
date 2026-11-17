@@ -4,13 +4,14 @@ import { EFFORT, MAX_OUTPUT_TOKENS, MODEL, type RetrievalMode } from "./config";
 import type { Section } from "./content";
 import { extractCitations } from "./citations";
 import { costUsd } from "./cost";
+import { signAnswer } from "./hmac";
 import { sourceTitle } from "./prompt";
 
 /** "retrieval-fallback": retrieval failed, so all content was used instead. */
 export type AnswerMode = RetrievalMode | "retrieval-fallback";
 
-/** Sent with the final stream chunk; the evals read it for latency and cost. */
-export interface ChatMetadata {
+/** Latency, cost and retrieval details of one answer. Only trusted callers (the evals) receive them. */
+export interface ChatDiagnostics {
   mode: AnswerMode;
   model: string;
   stopReason: string | null;
@@ -27,6 +28,15 @@ export interface ChatMetadata {
   costUsd: number;
 }
 
+/**
+ * Sent with the final stream chunk. The browser sends the signature back with
+ * the answer, which proves the answer is ours (see signAnswer).
+ */
+export interface ChatMetadata {
+  signature: string;
+  diagnostics?: ChatDiagnostics;
+}
+
 export type ChatUIMessage = UIMessage<ChatMetadata>;
 
 const TEXT_ID = "answer";
@@ -41,7 +51,8 @@ function getClient(): Anthropic {
 
 /**
  * Streams Claude's answer to the widget as UI message chunks: the text token
- * by token, then the cited sources as links, then usage metadata.
+ * by token, then the cited sources as links, then the answer's signature (and
+ * diagnostics, for trusted callers). Stops generating if `signal` aborts.
  */
 export async function streamAnswer({
   system,
@@ -50,6 +61,8 @@ export async function streamAnswer({
   mode,
   startedAt,
   retrievalMs,
+  diagnostics,
+  signal,
   writer,
 }: {
   system: string;
@@ -59,27 +72,34 @@ export async function streamAnswer({
   /** `performance.now()` when the request arrived. */
   startedAt: number;
   retrievalMs: number | null;
+  /** Whether to send latency, cost and retrieval details with the answer. */
+  diagnostics: boolean;
+  /** Aborts when the visitor goes away, so no tokens are paid for that nobody reads. */
+  signal?: AbortSignal;
   writer: UIMessageStreamWriter<ChatUIMessage>;
 }): Promise<void> {
   let firstTokenAt: number | null = null;
   let answer = "";
 
-  const stream = getClient().messages.stream({
-    model: MODEL,
-    max_tokens: MAX_OUTPUT_TOKENS,
-    output_config: { effort: EFFORT },
-    system: [
-      {
-        type: "text",
-        text: system,
-        // With all content in the prompt, the system prompt is identical for every
-        // question, so later requests read it from cache at a tenth of the price.
-        // Retrieval prompts differ per question; a cache write would only add cost.
-        ...(mode !== "retrieval" && { cache_control: { type: "ephemeral" as const } }),
-      },
-    ],
-    messages,
-  });
+  const stream = getClient().messages.stream(
+    {
+      model: MODEL,
+      max_tokens: MAX_OUTPUT_TOKENS,
+      output_config: { effort: EFFORT },
+      system: [
+        {
+          type: "text",
+          text: system,
+          // With all content in the prompt, the system prompt is identical for every
+          // question, so later requests read it from cache at a tenth of the price.
+          // Retrieval prompts differ per question; a cache write would only add cost.
+          ...(mode !== "retrieval" && { cache_control: { type: "ephemeral" as const } }),
+        },
+      ],
+      messages,
+    },
+    { signal },
+  );
 
   writer.write({ type: "start" });
   writer.write({ type: "text-start", id: TEXT_ID });
@@ -93,6 +113,7 @@ export async function streamAnswer({
   const message = await stream.finalMessage();
 
   if (message.stop_reason === "refusal" && !answer.trim()) {
+    answer = REFUSAL_TEXT;
     writer.write({ type: "text-delta", id: TEXT_ID, delta: REFUSAL_TEXT });
   }
   writer.write({ type: "text-end", id: TEXT_ID });
@@ -111,18 +132,23 @@ export async function streamAnswer({
     type: "finish",
     finishReason: toFinishReason(message.stop_reason),
     messageMetadata: {
-      mode,
-      model: message.model,
-      stopReason: message.stop_reason,
-      latencyMs: Math.round(performance.now() - startedAt),
-      timeToFirstTokenMs: firstTokenAt === null ? null : Math.round(firstTokenAt - startedAt),
-      retrievalMs,
-      ...(mode === "retrieval" && { retrievedIds: sources.map((s) => s.id) }),
-      inputTokens: message.usage.input_tokens,
-      outputTokens: message.usage.output_tokens,
-      cacheReadTokens: message.usage.cache_read_input_tokens ?? 0,
-      cacheWriteTokens: message.usage.cache_creation_input_tokens ?? 0,
-      costUsd: costUsd(message.usage),
+      signature: signAnswer(answer),
+      ...(diagnostics && {
+        diagnostics: {
+          mode,
+          model: message.model,
+          stopReason: message.stop_reason,
+          latencyMs: Math.round(performance.now() - startedAt),
+          timeToFirstTokenMs: firstTokenAt === null ? null : Math.round(firstTokenAt - startedAt),
+          retrievalMs,
+          ...(mode === "retrieval" && { retrievedIds: sources.map((s) => s.id) }),
+          inputTokens: message.usage.input_tokens,
+          outputTokens: message.usage.output_tokens,
+          cacheReadTokens: message.usage.cache_read_input_tokens ?? 0,
+          cacheWriteTokens: message.usage.cache_creation_input_tokens ?? 0,
+          costUsd: costUsd(message.usage),
+        },
+      }),
     },
   });
 }
