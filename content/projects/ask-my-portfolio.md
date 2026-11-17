@@ -23,29 +23,18 @@ Ask my portfolio is the chat assistant on this website. Visitors can ask about A
 
 ## Key decisions
 
-<!-- The main design decisions and why. Solo is already shown from `solo: true`. -->
-
-TODO: e.g. "Retrieval: ... chosen because ..."
+- **One source for pages and answers.** The site's pages and the assistant are built from the same Markdown files with the same parser, so every citation links to a heading that exists on the page. Each `##` section is one chunk; only sections over about 500 tokens are split, so a citation points at exactly one section.
+- **Grounded, cited answers.** The model may only use the retrieved sources, must cite every claim with a source number, and declines when the sources don't cover the question. Visitor messages are wrapped in tags and treated as questions, never as instructions.
+- **A fallback that always answers.** A second mode puts all content in the prompt instead, using prompt caching. If the database or the embedding API is down, the assistant switches to it, so visitors still get an answer.
+- **Limits on cost and abuse.** Requests are rate-limited per IP, questions are capped at 500 characters, only the last six messages are sent, and each answer has an output-token limit. When content changes on main, it is re-ingested automatically, and only chunks whose content hash changed are embedded again.
 
 ## Results
 
-<!--
-Fill this in from the eval results, not before. Good candidates are correctness,
-citation accuracy and refusal rate for baseline vs retrieval, p50/p95 latency and
-cost per 1,000 questions.
--->
-
-Measured with a 40-question evaluation (30 answerable questions and 10 that should be
-declined), run 3 times per question and graded fact by fact:
-
 - With retrieval, 99.2% of answers pass; with all content in the prompt, 98.3%. Every
   question that should be declined was declined.
-- Retrieval accuracy rose from 95.0% to 99.2% through three evaluation-driven changes:
-  adding context headers to chunks, rewording content that matched every question, and
-  limiting keyword search to names and technical terms.
 - Typical response time is about 1.5 seconds, and 1,000 questions cost about $0.17.
 
 ## Links
 
-- TODO: Live site URL
-- TODO: Source code URL
+- Livesite: You're on it
+- Github: [Source code URL](https://github.com/xZenshin/devSite)

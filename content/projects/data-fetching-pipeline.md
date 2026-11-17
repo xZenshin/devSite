@@ -13,7 +13,6 @@ A pipeline framework, built during a data engineering internship at Novonesis, t
 
 ## Stack
 
-<!-- One bullet per technology. Note anything used in an unusual or notable way. -->
 
 - Python
 - PySpark
@@ -22,7 +21,6 @@ A pipeline framework, built during a data engineering internship at Novonesis, t
 
 ## My role
 
-<!-- Solo or team? If team, how big, and what exactly did YOU own? Don't overclaim. -->
 
 Sole developer: designed and built the framework end to end during a data engineering
 internship in the Novonesis Data Office. Colleagues in the Data Office provided guidance.
@@ -33,15 +31,9 @@ internship in the Novonesis Data Office. Colleagues in the Data Office provided 
 
 ## Results
 
-<!--
-Quantify where you can: "cut p95 latency from 1.2s to 300ms", "reduced manual review
-by 40%", "200 weekly users". If there are no numbers, say what shipped and who used it.
--->
 
 Shipped the framework to production, along with a monitoring dashboard that tracks pipeline health and data freshness at a glance, and set up automatic email alerts whenever a pipeline run fails.
 
 ## Links
-
-<!-- Live demo, source code, write-up. Don't link private repos. If there's nothing public, write "No public links." -->
 
 No public links, since it is proprietary software owned by Novonesis.

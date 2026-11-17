@@ -28,7 +28,6 @@ Manhwa Shelf is a personal web app for keeping track of manhwa reading. It lists
 
 - Static site with no backend: the list lives in a JSON file in the repository and is built into the site, so the deployed site is read-only and the data is kept in version control.
 - Editing happens locally: a dev-only Vite plugin writes edits back to the data file, and a PowerShell script commits and publishes them.
-- Defined the data model for each series, with validation rules.
 
 ## Results
 
