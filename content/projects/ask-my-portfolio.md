@@ -3,7 +3,7 @@ title: Ask my portfolio
 summary: A retrieval-augmented chat assistant on this site that answers from the site's own content and cites its sources.
 period: 2026
 featured: false
-order: 1
+order: 3
 ---
 
 ## Problem

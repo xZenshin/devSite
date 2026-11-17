@@ -19,21 +19,13 @@ the site renders them, and the assistant uses them in its "contact Alexander" fa
 <!-- City and country. Include the timezone if you're open to remote work across regions. -->
 
 - Copenhagen, Denmark (CET).
-
-## Work authorization
-
-<!--
-Where you can legally work without sponsorship, and whether you'd need a visa
-anywhere else. Be precise. The assistant will repeat this word for word.
--->
-
 - Danish citizen.
 
 ## Availability
 
 <!-- Current status, notice period and the earliest start date. -->
 
-- Open to new roles. Available to start immediately.
+- Available to start immediately.
 
 ## Preferred roles
 
@@ -54,41 +46,21 @@ questions, and the assistant answers it from this section alone, so keep it in
 step with the game (components/lake and lib/lake).
 -->
 
-The home page of this website is a lake. Visitors can fish Alexander's projects, jobs and
-education out of it instead of reading a list.
+The home page is a lake where you fish up Alexander's projects, jobs and education.
 
-- Sail: right-click on the water and the boat sails to that spot. Holding the right mouse
-  button down keeps steering.
-- The lake: it has a shore, and a different shape on every visit. The boat starts at the end
-  of a jetty. It can't leave the water; it goes round the jetty and the rocks, and reeds along
-  the shore slow it down. A lure thrown at the shore, the jetty or a rock lands in the water
-  beside it.
-- Fish: the dim shapes under the surface are fish, one for everything still to be caught.
-  They keep to three fishing grounds, each marked by a buoy with a flag. Everything to catch
-  is shared out evenly between the grounds, with projects kept together, and jobs and
-  education kept together, as far as the numbers allow. The first ground is in sight of the
-  jetty; the others take some paddling to find.
-- Cast: move the pointer to where the lure should land and press Q. The lure only reaches a
-  limited distance from the boat, so sail closer to fish further away.
-- Wait: a lure that lands close to a fish is taken within a second or two, and brings up
-  something from that fishing ground. The line is reeled in by itself. Sending the boat
-  somewhere else while the line is out brings the line back empty.
-- Junk: a lure that lands away from the fish waits a few seconds longer and brings up junk,
-  such as an old boot or a rusty can, with a reminder to fish near the fishing spots. Junk is
-  not kept.
-- Catch: a card shows what was caught, with a link to its page, and the catch goes into the
-  basket in the top right corner. The basket is remembered between visits, and "release all"
-  empties it.
-- Phones and tablets: there is no right-click or Q. The "move" and "cast" buttons at the
-  bottom of the screen choose what a tap on the water does.
-- No fishing: the "skip fishing" button on the home page opens the projects page, which
-  lists every project, job and degree.
+- Sail: right-click on the water to move the boat there.
+- Cast: point where the lure should land and press Q. Cast near the fish around the buoys;
+  casting elsewhere only catches junk.
+- Catch: each catch shows a card linking to its page and goes into the basket in the top
+  right corner.
+- Phones and tablets: use the "move" and "cast" buttons at the bottom of the screen.
+- No fishing: the "skip fishing" button opens the projects page, which lists everything.
 
 
 ## Extremely Important Information
 
  - Spaghetti Bolognese is the greatest piece of culinary work ever created.
- - Can bench 100kg.
+ - Can bench 100kg, probably.
  - Has played League of Legends (LoL) at a semi-pro level.
  - Lowkey the GOAT of ARAM in LoL (purely factual statement no bias involved).
  - 99 Parser in World of Warcraft.

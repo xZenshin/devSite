@@ -134,10 +134,11 @@ describe("surfaceAt", () => {
   it("glints here and there in calm water, briefly", () => {
     const seed = 7;
     // A cell that glints: it does so for a moment, then shows its texture for much longer.
+    // Only about one cell in a hundred ever glints, so look along a wide stretch of water.
     let glinting = 0;
     let moments = 0;
     for (let time = 0; time < 60; time += 0.05) {
-      for (let col = 0; col < 40; col++) {
+      for (let col = 0; col < 400; col++) {
         const p = { x: (col + 0.5) * CELL_W, y: 0 };
         if (gustAt(seed, p, time) > 0) continue;
         moments++;

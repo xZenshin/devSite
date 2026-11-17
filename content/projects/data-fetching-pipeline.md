@@ -3,7 +3,7 @@ title: Data Fetching Pipeline
 summary: Built a pipeline framework for Novonesis that retrieves data from public APIs and saves it to Databricks Unity Catalog.
 period: 2026
 featured: true
-order: 3
+order: 1
 ---
 
 

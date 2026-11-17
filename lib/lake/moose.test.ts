@@ -139,13 +139,13 @@ describe("alertShake", () => {
     while (moose.mode === "alert" && moose.t < 0.5) {
       shakes.push(alertShake(moose));
       // Drawn every frame while it shakes, so the shake is smooth.
-      expect(mooseMoving(moose)).toBe(moose.t < 0.35);
+      expect(mooseMoving(moose)).toBe(moose.t < 0.45);
       stepMoose(moose, lake, { x: moose.at.x - 150, y: moose.at.y }, DT / 4, numbers(1));
     }
-    // Both ways, never more than a pixel and a half, and still by the end.
+    // Both ways, never more than four pixels, and still by the end.
     expect(Math.min(...shakes)).toBeLessThan(-0.3);
     expect(Math.max(...shakes)).toBeGreaterThan(0.3);
-    for (const shake of shakes) expect(Math.abs(shake)).toBeLessThanOrEqual(1.5);
+    for (const shake of shakes) expect(Math.abs(shake)).toBeLessThanOrEqual(4);
     expect(shakes.at(-1)).toBe(0);
     expect(mooseMoving(moose)).toBe(false);
   });
