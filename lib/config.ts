@@ -23,7 +23,7 @@ export const MAX_ASSISTANT_CHARS = 2000;
 /** Largest request body accepted, in bytes. Reading stops as soon as a body passes it. */
 export const MAX_BODY_BYTES = 32_000;
 
-/** Questions one visitor (by IP) may ask per window. Matches the Vercel Firewall rule in the README. */
+/** Questions one visitor (by IP) may ask per window. Matches the Vercel Firewall rule in TECHNICAL.md. */
 export const VISITOR_LIMIT = 10;
 export const VISITOR_WINDOW_SECONDS = 600;
 

@@ -81,7 +81,7 @@ export function summarize(mode: string, rows: RunRow[]): Summary {
   };
 }
 
-/** A Markdown table with one column per mode, for the terminal, CI summaries and the README. */
+/** A Markdown table with one column per mode, for the terminal, CI summaries and TECHNICAL.md. */
 export function formatSummaryTable(summaries: Summary[]): string {
   const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
   const ms = (v: number) => `${Math.round(v)} ms`;

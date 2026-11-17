@@ -19,7 +19,7 @@ const GENERIC_ERROR = "The assistant couldn't answer. Try again in a moment.";
 /**
  * Guards run cheapest first, and everything that costs money comes last:
  * only same-site JSON requests, a capped body, a valid conversation, then the
- * rate limits. A Vercel Firewall rule (see the README) also limits each IP
+ * rate limits. A Vercel Firewall rule (see TECHNICAL.md) also limits each IP
  * before this runs at all.
  */
 export async function POST(request: Request): Promise<Response> {
