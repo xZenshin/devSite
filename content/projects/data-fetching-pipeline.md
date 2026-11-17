@@ -7,11 +7,9 @@ order: 1
 ---
 
 
-## Problem
+## Summary
 
-<!-- Who had what problem, and why it mattered. 2–4 sentences. -->
-
-Collecting data from public APIs for analytics and business intelligence is time-consuming, and without a shared framework, every team and department ends up repeating the same groundwork. This project solves that with a ready-made pipeline that fetches data from API sources: adding or changing a data source is simple, data management is already handled, and the resulting data is easy to access and use for analysis.
+A pipeline framework, built during a data engineering internship at Novonesis, that fetches data from public APIs and stores it in Databricks Unity Catalog. Without a shared framework, every team that needs API data for analytics and business intelligence repeats the same groundwork. With it, adding or changing a data source is simple, data management is already handled, and the resulting data is easy to access for analysis.
 
 ## Stack
 

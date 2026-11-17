@@ -3,16 +3,13 @@ title: Ask my portfolio
 summary: A retrieval-augmented chat assistant on this site that answers from the site's own content and cites its sources.
 period: 2026
 featured: false
+solo: true
 order: 3
 ---
 
-## Problem
+## Summary
 
-Recruiters and hiring managers spend little time on each portfolio, and the detail they
-need is often spread across several pages. This project adds an assistant to the site
-that replies in a few sentences, using only the site's own content. Every claim links to
-the section it comes from, and when the site doesn't cover something, the assistant says
-so instead of guessing.
+Ask my portfolio is the chat assistant on this website. Visitors can ask about Alexander's projects, experience and skills and get a reply of a few sentences, drawn only from the site's own content. Every claim links to the section it comes from, and when the site doesn't cover something, the assistant says so instead of guessing. It is built for recruiters and hiring managers, who spend little time on each portfolio and would otherwise have to look through several pages.
 
 ## Stack
 
@@ -24,11 +21,11 @@ so instead of guessing.
 - Vercel Firewall for per-IP rate limiting
 - GitHub Actions for re-ingesting content and running evals on pull requests
 
-## My role
+## Key decisions
 
-<!-- State this exactly as true. Say what you designed, built and measured. -->
+<!-- The main design decisions and why. Solo is already shown from `solo: true`. -->
 
-TODO: e.g. "Sole developer: designed the ingest and retrieval pipeline, the chat widget and the evaluation harness."
+TODO: e.g. "Retrieval: ... chosen because ..."
 
 ## Results
 

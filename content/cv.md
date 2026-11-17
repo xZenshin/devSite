@@ -13,11 +13,10 @@ repeating them here.
 
 Recent MSc graduate in Computer Science from the IT University of Copenhagen (GPA
 9.4), with a background in both software development and AI/ML. During an
-internship at Novonesis, built an automated data pipeline framework on Databricks end to end, from API integration to testing, monitoring and CI/CD. In AI, has worked with deep learning and Transformer models, including a master's thesis on deepfake detection
-with Vision Transformers (grade 12). Programming is also a hobby: builds small
-projects in spare time for the fun of learning something new and seeing an idea
-turn into something that works. Uses AI tools such as Claude Code to work faster
-and better. Motivated and curious, and looking forward to joining a team that offers
+internship at Novonesis, built an automated data pipeline framework on Databricks end to end, from API integration to testing, monitoring and CI/CD. Have worked with deep learning and Transformer models, etc, including a master's thesis on deepfake audio detection
+with Vision Transformers. Programming is also a hobby: I build small
+projects in my spare time for the fun of learning something new and seeing an idea
+turn into something that works. I use AI tools such as Claude Code to optimize my project workflow. Motivated and curious, and looking forward to joining a team that offers
 room to learn and to help build solutions that make a difference.
 
 ## Experience
@@ -40,8 +39,6 @@ and link to a project file instead of repeating its results.
 - Assisted the IT support department in helping students and staff with IT issues.
 
 ## Education
-
-Grades are on the Danish 7-point grading scale, where 12 is the highest grade.
 
 ### MSc in Computer Science — IT University of Copenhagen (2023–2025)
 
@@ -120,10 +117,10 @@ anything, so a bare skill name can't answer "has he used X in production?".
 
 ### Delivery and lifecycle
 
+- Git: version control.
 - CI/CD with GitHub Actions, automated testing, logging and monitoring, alerting,
   documentation: production, Novonesis internship
   ([Data Fetching Pipeline](/projects/data-fetching-pipeline)).
-- GitHub Actions: personal project, [Applicator](/projects/applicator).
 - Unit testing with Vitest: personal projects, [Manhwa Shelf](/projects/manhwa-shelf) and
   [Applicator](/projects/applicator).
 - Docker: personal projects, [RepTracker](/projects/rep-tracker) (multi-stage build) and
@@ -131,7 +128,6 @@ anything, so a bare skill name can't answer "has he used X in production?".
 - Hosting and deployment: Render ([RepTracker](/projects/rep-tracker)), Azure Container Apps
   ([CV Builder](/projects/cv-builder)) and Cloudflare Workers ([CV Builder](/projects/cv-builder),
   [Manhwa Shelf](/projects/manhwa-shelf)).
-- Git. TODO: context.
 
 ## Spoken languages
 

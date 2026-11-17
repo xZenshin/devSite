@@ -3,14 +3,23 @@ title: Applicator
 summary: A Windows desktop app that uses the Claude Code CLI to turn a job posting into a tailored CV and application letter, exported as PDFs.
 period: 2026
 featured: false
+solo: true
 order: 4
+images:
+  - src: /projects/applicator/review.png
+    alt: "Reviewing a generated application letter: an editable text form on the left and a live preview of the letter on the right"
+    caption: "Reviewing a generated letter, with revisions by instruction"
+  - src: /projects/applicator/new-application.png
+    alt: "The New application page with fields for the job posting, the applicant's own text and extra instructions"
+    caption: "Starting an application from a pasted job posting"
+  - src: /projects/applicator/my-cv.png
+    alt: "The master CV editor with personal details and technical skills next to a preview of the rendered CV"
+    caption: "The master CV editor and preview"
 ---
 
-## Problem
+## Summary
 
-Job hunting means rewriting the same CV and application letter for every posting. Each version has to match the posting and stay true to the applicant's real background, and postings may be in different languages, such as Danish or English. Applicator keeps all CV data in one place and produces a tailored draft that the applicant reviews before sending.
-
-(Essentially a continuation of the CV-Builder project that also includes the application portion)
+Applicator is a Windows desktop app for writing job applications. It keeps all CV data in one place and, from a pasted job posting, drafts a CV and application letter tailored to that posting, in the posting's language (for example Danish or English). The draft is reviewed and edited in the app, then exported as PDFs. It continues the [CV Builder](/projects/cv-builder) project and adds the application letter.
 
 ## Stack
 
@@ -27,9 +36,13 @@ Job hunting means rewriting the same CV and application letter for every posting
 - GitHub Actions: typecheck and tests on Windows for pull requests into `main` and for published releases
 - Python with fontTools: script that generates the small-caps font used in CV headings
 
-## My role
+## Key decisions
 
-Solo personal project, built with Claude. Alexander was the only person working on it. He decided the stack (Electron, React and TypeScript), the tailoring approach (the model selects CV items by ID and may lightly reword them, but never adds facts), that output follows the language of the posting, that the workflow includes an editable review step with instruction-based revisions before PDF export, and that the first version would leave out CV import, status tracking, multiple templates and DOCX export.
+- Stack: Electron, React and TypeScript, with all model calls going through the Claude Code CLI.
+- Tailoring: the model selects CV items by ID and may lightly reword them, but never adds facts.
+- Language: output follows the language of the posting.
+- Review: an editable review step with instruction-based revisions comes before PDF export.
+- Scope: the first version left out CV import, status tracking, multiple templates and DOCX export.
 
 ## Results
 
@@ -46,7 +59,6 @@ Shipped features:
 
 Model output is checked against the CV data: item IDs that are not in the matching section are dropped with a warning.
 
-TODO: How many applications has Applicator been used for, and with what outcome?
 
 ## Links
 

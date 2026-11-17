@@ -37,6 +37,21 @@ export interface PageMeta {
   summary?: string;
   period?: string;
   featured: boolean;
+  /** Projects only: built by Alexander alone. */
+  solo: boolean;
+  /** Projects only: screenshots or diagrams shown under the page header. */
+  images: ProjectImage[];
+}
+
+/**
+ * One picture on a project page, from the `images` frontmatter list. Images are
+ * shown on the page only; the assistant never sees them.
+ */
+export interface ProjectImage {
+  /** Path under /public, e.g. "/projects/applicator/review.png". */
+  src: string;
+  alt: string;
+  caption?: string;
 }
 
 export interface Content {
@@ -161,6 +176,8 @@ export function parseContentFile(file: string, raw: string): ParsedFile {
       ...(pageSummary && { summary: pageSummary }),
       ...(cleanValue(data.period) && { period: cleanValue(data.period) }),
       featured: data.featured === true,
+      solo: isProject(file) && data.solo === true,
+      images: isProject(file) ? parseImages(file, data.images, warnings) : [],
     },
     sections,
     contact,
@@ -248,6 +265,7 @@ function projectOverview(
     period && `- Period: ${period}`,
     // Spelled out, because the model never sees the frontmatter flag itself.
     data.featured === true && "- Featured project: Alexander considers this his strongest project.",
+    data.solo === true && "- Solo project: Alexander designed and built it alone.",
   ].filter((line): line is string => Boolean(line));
   if (lines.length === 0) return null;
 
@@ -283,6 +301,27 @@ function buildContactSection(
     url: `${pageUrl}#${anchor}`,
     text: lines.join("\n"),
   };
+}
+
+function parseImages(file: string, value: unknown, warnings: string[]): ProjectImage[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) {
+    warnings.push(`${file}: "images" must be a list`);
+    return [];
+  }
+  const images: ProjectImage[] = [];
+  for (const item of value) {
+    const raw = (item ?? {}) as Record<string, unknown>;
+    const src = cleanValue(raw.src);
+    const alt = cleanValue(raw.alt);
+    if (!src?.startsWith("/") || !alt) {
+      warnings.push(`${file}: skipped an image without a "src" under /public or without "alt" text`);
+      continue;
+    }
+    const caption = cleanValue(raw.caption);
+    images.push({ src, alt, ...(caption && { caption }) });
+  }
+  return images;
 }
 
 function parseContact(value: unknown): Contact | undefined {

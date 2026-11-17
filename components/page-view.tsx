@@ -1,34 +1,45 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import type { SitePage } from "@/lib/site";
 import { RevealLines } from "./reveal-lines";
 import { Markdown } from "./markdown";
+import { ProjectImages } from "./project-images";
 
 /**
  * A content page: a large title from frontmatter, then one anchored section
- * per ## heading, numbered in page order.
+ * per ## heading, numbered in page order. Project images follow the first
+ * section (the Summary), so visitors read what the project is before seeing it.
  */
 export function PageView({ page, label }: { page: SitePage; label: ReactNode }) {
+  const images = page.images.length > 0 && <ProjectImages images={page.images} />;
   return (
     <article className="pt-32 sm:pt-40">
-      <PageHeader label={label} title={page.title} summary={page.summary} period={page.period} />
+      <PageHeader
+        label={label}
+        title={page.title}
+        summary={page.summary}
+        period={[page.period, page.solo && "solo project"].filter(Boolean).join(" · ")}
+      />
+      {page.sections.length === 0 && images}
 
       <div>
         {page.sections.map((section, i) => (
-          <section
-            key={section.id}
-            id={section.anchor}
-            className="page-section scroll-reveal grid gap-x-8 gap-y-3 border-b border-line py-12 md:grid-cols-[10rem_1fr]"
-          >
-            <p aria-hidden="true" className="font-mono text-[13px] text-ash">
-              {String(i + 1).padStart(2, "0")}
-            </p>
-            <div className="max-w-[68ch]">
-              <h2 className="text-[clamp(1.6rem,3.2vw,2.5rem)] leading-tight font-medium tracking-tight-2">
-                {section.heading}
-              </h2>
-              <Markdown>{section.text}</Markdown>
-            </div>
-          </section>
+          <Fragment key={section.id}>
+            <section
+              id={section.anchor}
+              className="page-section scroll-reveal grid gap-x-8 gap-y-3 border-b border-line py-12 md:grid-cols-[10rem_1fr]"
+            >
+              <p aria-hidden="true" className="font-mono text-[13px] text-ash">
+                {String(i + 1).padStart(2, "0")}
+              </p>
+              <div className="max-w-[68ch]">
+                <h2 className="text-[clamp(1.6rem,3.2vw,2.5rem)] leading-tight font-medium tracking-tight-2">
+                  {section.heading}
+                </h2>
+                <Markdown>{section.text}</Markdown>
+              </div>
+            </section>
+            {i === 0 && images}
+          </Fragment>
         ))}
       </div>
     </article>

@@ -3,12 +3,17 @@ title: Manhwa Shelf
 summary: A personal web app for tracking manhwa reading progress, with ratings, chapter counts and notes, deployed as a static React site on Cloudflare.
 period: 2026
 featured: false
+solo: true
 order: 6
+images:
+  - src: /projects/manhwa-shelf/shelf.png
+    alt: "The shelf showing the Caught Up tab: series cards with cover art, chapter progress bars, ratings out of 10 and reading notes"
+    caption: "The shelf, filtered to series that are caught up"
 ---
 
-## Problem
+## Summary
 
-Manhwa reading sites often go down or disappear, and any bookmarks or reading history on them go too. Keeping track of where each series was left off needed a record that doesn't depend on any of those sites. Manhwa Shelf holds that record: a list of every series with its status, a rating, chapters read and a short note on where the story stands.
+Manhwa Shelf is a personal web app for keeping track of manhwa reading. It lists every series with its status, a rating, chapters read and a short note on where the story stands, with tabs, search and sorting. Reading sites often go down or disappear, taking bookmarks and reading history with them, so the list lives on its own site that doesn't depend on any of them.
 
 ## Stack
 
@@ -19,9 +24,11 @@ Manhwa reading sites often go down or disappear, and any bookmarks or reading hi
 - Cloudflare Workers static assets, configured with Wrangler: hosting, with a new deploy on every push to the main branch
 - PowerShell and Node.js: a script that adds an entry to the data file, commits it and pushes it, which publishes the change without starting the dev server
 
-## My role
+## Key decisions
 
-Solo project. Designed and built the whole app: the data model and validation rules, the React interface, the dev-only Vite plugin that writes edits back to the data file, the PowerShell publishing script and the Cloudflare deployment. Chose a static site with no backend: the list lives in a JSON file in the repository and is built into the site, so the deployed site is read-only and the data is kept in version control.
+- Static site with no backend: the list lives in a JSON file in the repository and is built into the site, so the deployed site is read-only and the data is kept in version control.
+- Editing happens locally: a dev-only Vite plugin writes edits back to the data file, and a PowerShell script commits and publishes them.
+- Defined the data model for each series, with validation rules.
 
 ## Results
 

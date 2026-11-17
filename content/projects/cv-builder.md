@@ -3,12 +3,13 @@ title: CV Builder
 summary: A web app for keeping one master CV and exporting PDF versions tailored to each job application, with AI suggestions from a pasted job listing.
 period: 2026
 featured: false
+solo: true
 order: 7
 ---
 
-## Problem
+## Summary
 
-Each job application calls for a different version of a CV. Keeping a separate copy per application means repeating edits and losing track of which entries exist where. CV Builder keeps one master CV with every entry, and each tailored version is made by switching entries on or off instead of deleting them.
+CV Builder is a web app for tailoring a CV to each job application. It keeps one master CV with every entry, and each tailored version is made by switching sections, entries and bullet points on or off instead of keeping separate copies. The result is exported as an A4 PDF, and the app can suggest which entries to include based on a pasted job listing.
 
 ## Stack
 
@@ -20,9 +21,7 @@ Each job application calls for a different version of a CV. Keeping a separate c
 - Azure Container Apps: hosted the backend container, scaled to zero when idle
 - Cloudflare Workers: served the frontend and forwarded API requests to the backend
 
-## My role
-
-Solo project: designed and built the frontend, backend, PDF layout and deployment.
+## Key decisions
 
 - Started with a Postgres database, then removed it so the server stores nothing. The browser keeps the CV and sends the whole document with each request. Work is saved as a versioned `.cvjson` file, with an automatic draft in the browser's local storage. This brought hosting down to one stateless container with no data to back up.
 - Built in/out switches for sections, entries and individual bullet points, so excluding an entry hides it from the PDF without deleting it.
@@ -33,8 +32,6 @@ Solo project: designed and built the frontend, backend, PDF layout and deploymen
 ## Results
 
 Deployed with the frontend on Cloudflare Workers and the backend as a Docker container on Azure Container Apps. The deployment is no longer running.
-
-TODO: Was CV Builder used to produce CVs for real job applications?
 
 ## Links
 

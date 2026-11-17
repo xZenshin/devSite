@@ -312,7 +312,6 @@ supabase/migrations/ table, full-text index and search functions
 
 
 TODO:
-Add animals that has idle animation and run away with a [!] when coming close
 Mby add a final building or something
 Go through the project and cv and about and clean up
 Update the readme to not be cancer

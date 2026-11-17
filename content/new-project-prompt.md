@@ -45,20 +45,28 @@ title: Project Name
 summary: One descriptive sentence about what the project is and does.
 period: 2026
 featured: false
+solo: true
 order: TODO
+images:
+  - src: /projects/<slug>/screenshot.png
+    alt: TODO: what the screenshot shows
+    caption: Optional short caption
 ---
 
-## Problem
+## Summary
 
-2–4 sentences: who had what problem, and why it mattered.
+2–4 sentences: what the project is and does, who it's for, and the problem it solves.
+Go beyond the one-line `summary` in the frontmatter instead of repeating it.
 
 ## Stack
 
 - One bullet per technology, with what it was used for when that's notable
 
-## My role
+## Key decisions
 
-What I designed, built and decided. Solo or team, and team size.
+Solo projects: the main design decisions and why, one bullet each.
+Team projects: call this section "My role" instead, and say the team size and exactly
+what I owned.
 
 ## Results
 
@@ -71,8 +79,15 @@ What shipped, who uses it, and numbers where there's evidence.
 ```
 
 Rules:
-- Keep these five `##` headings, in this order, with no other headings at that level.
-  Each one becomes a section the assistant links to.
+- Keep these five `##` headings, in this order, with no other headings at that level
+  ("Key decisions" becomes "My role" for team projects). Each one becomes a section the
+  assistant links to.
+- `solo: true` only if I built it alone; it shows "solo project" in the page header and
+  tells the assistant. For team or employer projects, leave it out.
+- `images` is optional: screenshots or diagrams that I'll save under
+  `public/projects/<slug>/`. Each needs `src` and `alt`; `caption` is optional. Leave the
+  list out if there are none yet. The assistant never sees images, so don't put facts only
+  in a caption.
 - Anything unknown is written as `TODO: <the question to answer>`. The site leaves those
   lines out until I fill them in. Never write a plausible guess.
 - Don't overclaim. If others contributed, say what was mine. "Contributed to X" is not "built X".

@@ -3,7 +3,7 @@ import { buildCatches, cvEntries } from "./catches";
 import type { Site, SitePage } from "./site";
 
 function page(url: string, title: string, extra: Partial<SitePage> = {}): SitePage {
-  return { file: `${url.slice(1)}.md`, url, title, featured: false, sections: [], ...extra };
+  return { file: `${url.slice(1)}.md`, url, title, featured: false, solo: false, images: [], sections: [], ...extra };
 }
 
 function section(heading: string, text: string): SitePage["sections"][number] {

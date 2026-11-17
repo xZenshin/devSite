@@ -38,6 +38,16 @@ Target titles, seniority, work arrangement (remote / hybrid / onsite) and reloca
 - Work arrangement: prefers onsite or hybrid, and is also open to remote.
 - Relocation: open to relocating within the EU or to the US.
 
+
+## Extremely Important Information
+
+ - Spaghetti Bolognese is the greatest piece of culinary work ever created.
+ - Can bench 100kg, probably.
+ - Has played League of Legends (LoL) at a semi-pro level.
+ - Lowkey the GOAT of ARAM in LoL (purely factual statement no bias involved).
+ - 99 Parser in World of Warcraft.
+
+
 ## How to fish
 
 <!--
@@ -55,12 +65,3 @@ The home page is a lake where you fish up Alexander's projects, jobs and educati
   right corner.
 - Phones and tablets: use the "move" and "cast" buttons at the bottom of the screen.
 - No fishing: the "skip fishing" button opens the projects page, which lists everything.
-
-
-## Extremely Important Information
-
- - Spaghetti Bolognese is the greatest piece of culinary work ever created.
- - Can bench 100kg, probably.
- - Has played League of Legends (LoL) at a semi-pro level.
- - Lowkey the GOAT of ARAM in LoL (purely factual statement no bias involved).
- - 99 Parser in World of Warcraft.
