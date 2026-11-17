@@ -1,0 +1,49 @@
+name: Evals
+
+# Runs the 40-question eval in both modes on PRs that can change an answer.
+# One rep keeps a run cheap; the numbers in TECHNICAL.md come from 3-rep local runs.
+on:
+  pull_request:
+    paths:
+      - "content/**"
+      - "lib/**"
+      - "app/api/**"
+      - "evals/**"
+      - "package-lock.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    # Fork PRs don't receive secrets, so they can't run the evals.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Retrieval mode searches the live database, which holds main's content.
+      # For a PR that edits /content, the retrieval numbers reflect main until merge.
+      # Local 3-rep runs score ~97–99%; with 1 rep the margin is about ±7 points,
+      # so failing below 85% catches real regressions (7+ failed cases), not noise.
+      - run: npm run eval -- --reps 1 --min-pass 0.85
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: evals/results/

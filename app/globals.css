@@ -1,0 +1,267 @@
+@import "tailwindcss";
+
+/* Black and white. Text pairs meet WCAG AA: ash on black is 6.2:1.
+   "dim" is for decoration only (rules, inactive marks), never for text. */
+:root {
+  color-scheme: dark;
+  --black: #000000;
+  --panel: #0b0b0b;
+  --bone: #f2f2f0;
+  --ash: #8c8c8c;
+  --line: #262626;
+  --dim: #4a4a4a;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.7, 0, 0.2, 1);
+}
+
+@theme inline {
+  --color-black: var(--black);
+  --color-panel: var(--panel);
+  --color-bone: var(--bone);
+  --color-ash: var(--ash);
+  --color-line: var(--line);
+  --color-dim: var(--dim);
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --tracking-display: -0.045em;
+  --tracking-tight-2: -0.025em;
+  --ease-out-expo: var(--ease-out-expo);
+  --ease-in-out: var(--ease-in-out);
+}
+
+html {
+  background: var(--black);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  background: var(--black);
+  color: var(--bone);
+}
+
+::selection {
+  background: var(--bone);
+  color: var(--black);
+}
+
+/* In the base layer so utilities (e.g. an input inside a bordered field) can override it. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--bone);
+    outline-offset: 3px;
+  }
+}
+
+/* Film grain over everything, very faint, so flat black has some texture. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- Content rendered from Markdown ---------- */
+
+.content :where(p, ul, ol) {
+  margin-block: 0.85rem;
+  line-height: 1.7;
+  color: color-mix(in srgb, var(--bone) 82%, transparent);
+}
+.content :where(ul) {
+  padding-left: 1.1rem;
+  list-style: none;
+}
+.content :where(ul > li) {
+  position: relative;
+  margin-block: 0.35rem;
+}
+.content :where(ul > li)::before {
+  content: "";
+  position: absolute;
+  left: -1.1rem;
+  top: 0.8em;
+  width: 0.5rem;
+  height: 1px;
+  background: var(--ash);
+}
+.content :where(ol) {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.content :where(h3) {
+  margin-top: 2rem;
+  font-size: 1.125rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-tight-2);
+  color: var(--bone);
+}
+.content :where(a) {
+  color: var(--bone);
+  text-decoration: underline;
+  text-decoration-color: var(--dim);
+  text-underline-offset: 4px;
+  transition: text-decoration-color 200ms;
+}
+.content :where(a:hover) {
+  text-decoration-color: var(--bone);
+}
+.content :where(strong) {
+  font-weight: 500;
+  color: var(--bone);
+}
+
+/* ---------- Animations ---------- */
+
+/* Display lines rise out of a mask, staggered by --i. */
+.reveal-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+.reveal-line > span {
+  display: block;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-line > span {
+    animation: line-up 1.1s var(--ease-out-expo) both;
+    animation-delay: calc(var(--i, 0) * 110ms + 120ms);
+  }
+  .fade-in {
+    animation: fade-up 1s var(--ease-out-expo) both;
+    animation-delay: var(--delay, 500ms);
+  }
+}
+@keyframes line-up {
+  from {
+    transform: translateY(105%);
+  }
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* Sections fade in as they scroll into view, where the browser supports
+   scroll-driven animations. Elsewhere they are simply visible. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .scroll-reveal {
+      animation: fade-up linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+
+/* The block caret of the ask prompt. */
+.caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1.1em;
+  background: var(--bone);
+  vertical-align: text-bottom;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .caret {
+    animation: blink 1.05s steps(1) infinite;
+  }
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* A citation jumps to a section: the section flashes and keeps a white bar. */
+.page-section {
+  scroll-margin-top: 6rem;
+  position: relative;
+}
+.page-section::before {
+  content: "";
+  position: absolute;
+  left: -1.25rem;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  width: 2px;
+  background: var(--bone);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 600ms var(--ease-out-expo);
+}
+.page-section:target::before {
+  transform: scaleY(1);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .page-section:target {
+    animation: target-flash 1.6s ease-out;
+  }
+}
+@keyframes target-flash {
+  from {
+    background: color-mix(in srgb, var(--bone) 10%, transparent);
+  }
+}
+
+/* The chat panel wipes open from the bottom. */
+@media (prefers-reduced-motion: no-preference) {
+  .panel-in {
+    animation: panel-in 420ms var(--ease-out-expo);
+  }
+}
+@keyframes panel-in {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* The catch card and the basket list rise into place; the basket's count flashes on a catch. */
+@media (prefers-reduced-motion: no-preference) {
+  .catch-in {
+    animation: catch-in 520ms var(--ease-out-expo) both;
+  }
+  .basket-count {
+    animation: count-flash 900ms ease-out;
+  }
+}
+@keyframes catch-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes count-flash {
+  from {
+    background: var(--bone);
+    color: var(--black);
+  }
+}
+
+/* Safety net: no motion at all when the visitor asks for less. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
