@@ -55,16 +55,18 @@ import { project, traceRing, unproject, type Vec } from "@/lib/lake/world";
 import { usePrefersReducedMotion } from "../use-media-query";
 
 export type TouchMode = "move" | "cast";
+/** What a mouse button does: the left sails, the right casts. */
+export type Control = "sail" | "cast";
 
 interface LakeCanvasProps {
   /** The line came up with something on it: a fish from that shoal (by number), or junk (null) from anywhere else. */
   onHaul: (shoal: number | null) => void;
   /** The visitor sailed, cast or clicked the water: whatever is showing can go away. */
   onAction: () => void;
+  /** A mouse button was pressed on the water, whether or not anything came of it. */
+  onControl: (control: Control) => void;
   /** What a tap does on touch screens, which have no right-click or hover. */
   touchMode: TouchMode;
-  /** Keys are ignored while something else (the chat) has the visitor's attention. */
-  keysBlocked: boolean;
   /** How much of each kind is left to catch: that many fish swim in its shoal. */
   stock: Stock;
 }
@@ -107,7 +109,7 @@ function anchorFor(width: number, height: number): Vec {
 
 /**
  * The lake: water, shore and fish drawn as monospace characters on a canvas.
- * Right-click sails the boat, Q throws the lure at the pointer. The picture is
+ * Left-click sails the boat, right-click throws the lure there. The picture is
  * redrawn every frame while the boat, the line or a ripple is moving; at rest,
  * while only the water stirs and the fish drift, ten times a second; and with
  * reduced motion not at all.
@@ -135,7 +137,7 @@ export function LakeCanvas(props: LakeCanvasProps) {
       resume: kept ?? undefined,
     });
     const camera = { x: 0, y: 0, placed: false };
-    const pointer = { x: 0, y: 0, known: false, overWater: false, mouse: false };
+    const pointer = { x: 0, y: 0, overWater: false, mouse: false };
     let width = 0;
     let height = 0;
     let cellW = FONT_PX * 0.6;
@@ -522,22 +524,33 @@ export function LakeCanvas(props: LakeCanvasProps) {
     }
 
     const onContextMenu = (event: MouseEvent) => event.preventDefault();
+    const onMouseDown = (event: MouseEvent) => {
+      if (event.button !== 0) return;
+      // Steering with the left button held would otherwise select the text the pointer passes over.
+      event.preventDefault();
+      // Clicking the water still takes focus away from whatever had it, as a click on the page would.
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    };
     const onPointerDown = (event: PointerEvent) => {
       lastPointerType = event.pointerType;
-      if (event.pointerType === "mouse" && event.button === 2) {
+      if (event.pointerType !== "mouse") return;
+      if (event.button === 0) {
         canvas.setPointerCapture(event.pointerId);
+        latest.current.onControl("sail");
         sailTo(event.clientX, event.clientY);
+      } else if (event.button === 2) {
+        latest.current.onControl("cast");
+        throwLure(event.clientX, event.clientY);
       }
     };
     const onPointerMove = (event: PointerEvent) => {
       pointer.x = event.clientX;
       pointer.y = event.clientY;
-      pointer.known = true;
       const wasOverWater = pointer.overWater;
       pointer.overWater = event.target === canvas;
       pointer.mouse = event.pointerType === "mouse";
-      // Holding the right button down keeps steering, as in League.
-      if (pointer.mouse && pointer.overWater && event.buttons & 2) sailTo(event.clientX, event.clientY);
+      // Holding the left button down keeps steering.
+      if (pointer.mouse && pointer.overWater && event.buttons & 1) sailTo(event.clientX, event.clientY);
       // Otherwise only the aim mark changes, and only over the water.
       else if (pointer.overWater || wasOverWater) requestFrame();
     };
@@ -545,24 +558,19 @@ export function LakeCanvas(props: LakeCanvasProps) {
       pointer.overWater = false;
       requestFrame();
     };
+    // The mouse is handled on pointerdown; a tap on a touch screen does what the move/cast toggle says.
     const onClick = (event: MouseEvent) => {
-      if (lastPointerType === "mouse") latest.current.onAction();
-      else if (latest.current.touchMode === "cast") throwLure(event.clientX, event.clientY);
+      if (lastPointerType === "mouse") return;
+      if (latest.current.touchMode === "cast") throwLure(event.clientX, event.clientY);
       else sailTo(event.clientX, event.clientY);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() !== "q" || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
-      const target = event.target as HTMLElement | null;
-      if (target?.closest("input, textarea, select, [contenteditable]") || latest.current.keysBlocked) return;
-      if (pointer.known) throwLure(pointer.x, pointer.y);
     };
 
     canvas.addEventListener("contextmenu", onContextMenu);
+    canvas.addEventListener("mousedown", onMouseDown);
     canvas.addEventListener("pointerdown", onPointerDown);
     canvas.addEventListener("click", onClick);
     window.addEventListener("pointermove", onPointerMove, { passive: true });
     document.documentElement.addEventListener("pointerleave", onPointerLeave);
-    window.addEventListener("keydown", onKeyDown);
     const observer = new ResizeObserver(resize);
     observer.observe(canvas);
 
@@ -591,11 +599,11 @@ export function LakeCanvas(props: LakeCanvasProps) {
       window.clearTimeout(drift);
       observer.disconnect();
       canvas.removeEventListener("contextmenu", onContextMenu);
+      canvas.removeEventListener("mousedown", onMouseDown);
       canvas.removeEventListener("pointerdown", onPointerDown);
       canvas.removeEventListener("click", onClick);
       window.removeEventListener("pointermove", onPointerMove);
       document.documentElement.removeEventListener("pointerleave", onPointerLeave);
-      window.removeEventListener("keydown", onKeyDown);
     };
   }, [reducedMotion]);
 

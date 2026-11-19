@@ -199,7 +199,7 @@ describe("glyphAt", () => {
       const float = [-1, 0, 1].map((c) => glyphAt(lake, col + c, row, CELL_W, CELL_H));
       expect(float.map((glyph) => glyph?.char).join("")).toBe("(_)");
       expect(float.every((glyph) => glyph?.solid)).toBe(true);
-      expect(glyphAt(lake, col, row - 1, CELL_W, CELL_H)).toEqual({ char: "P", tone: BONE, solid: true });
+      expect(glyphAt(lake, col, row - 1, CELL_W, CELL_H)).toEqual({ char: "A", tone: ASH, solid: true });
     }
   });
 

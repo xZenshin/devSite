@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChatProvider } from "@/components/chat/chat-provider";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { Cursor } from "@/components/cursor";
+import { MobileNotice } from "@/components/mobile-notice";
 import { SectionLink } from "@/components/section-link";
 import type { Contact } from "@/lib/content";
 import { getSite } from "@/lib/site";
@@ -70,6 +71,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <Footer contact={contact} />
           <ChatWidget />
           <Cursor />
+          <MobileNotice />
         </ChatProvider>
       </body>
     </html>
