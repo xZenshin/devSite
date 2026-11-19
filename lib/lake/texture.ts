@@ -66,7 +66,7 @@ function buoyAt(lake: Lake, col: number, row: number, cellW: number, cellH: numb
     const c = Math.floor(at.x / cellW) - col;
     const r = Math.floor(at.y / cellH) - row;
     if (r === 0 && Math.abs(c) <= 1) return "(_)"[1 - c];
-    if (r === 1 && c === 0) return "P";
+    if (r === 1 && c === 0) return "A";
   }
   return null;
 }

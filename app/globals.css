@@ -255,6 +255,75 @@ body::after {
   }
 }
 
+/* The control hints at the top catch the eye as the page comes in: a gleam runs over both keys at once,
+   a few times. Only until the key is used, and not with reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .hint-gleam kbd {
+    position: relative;
+    overflow: hidden;
+  }
+  .hint-gleam kbd::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      105deg,
+      transparent 25%,
+      color-mix(in srgb, var(--bone) 45%, transparent) 50%,
+      transparent 75%
+    );
+    animation: gleam 3s ease-in-out 1s 5 both;
+  }
+}
+@keyframes gleam {
+  from {
+    transform: translateX(-100%);
+  }
+  30%,
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* A control hint over the lake, the first time its button is used: the key goes down, then the hint fades.
+   Not behind the reduced-motion query: the safety net below makes it end at once, and the hint must still end. */
+.hint-used {
+  animation: hint-fade 1.4s ease-out forwards;
+}
+.hint-used kbd {
+  animation: key-press 1.4s var(--ease-out-expo) forwards;
+}
+/* ...and comes back by "skip fishing". */
+.hint-back {
+  animation: hint-back 700ms var(--ease-out-expo) both;
+}
+@keyframes hint-back {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes hint-fade {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes key-press {
+  12%,
+  100% {
+    transform: translateY(2px);
+    box-shadow: 0 0 0 var(--dim);
+    border-color: var(--bone);
+    background: var(--bone);
+    color: var(--black);
+  }
+}
+
 /* Safety net: no motion at all when the visitor asks for less. */
 @media (prefers-reduced-motion: reduce) {
   *,

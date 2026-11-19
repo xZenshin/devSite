@@ -58,8 +58,8 @@ step with the game (components/lake and lib/lake).
 
 The home page is a lake where you fish up Alexander's projects, jobs and education.
 
-- Sail: right-click on the water to move the boat there.
-- Cast: point where the lure should land and press Q. Cast near the fish around the buoys;
+- Sail: left-click on the water to move the boat there; hold the button down to keep steering.
+- Cast: right-click where the lure should land. Cast near the fish around the buoys;
   casting elsewhere only catches junk.
 - Catch: each catch shows a card linking to its page and goes into the basket in the top
   right corner.
