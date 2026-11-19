@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { Analytics } from "@vercel/analytics/next";
 import { ChatProvider } from "@/components/chat/chat-provider";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { Cursor } from "@/components/cursor";
@@ -71,6 +72,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <Footer contact={contact} />
           <ChatWidget />
           <Cursor />
+          <Analytics />
           <MobileNotice />
         </ChatProvider>
       </body>
